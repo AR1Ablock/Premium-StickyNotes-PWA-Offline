@@ -80,6 +80,6 @@
 
 ## 🛠️ Quick Start  
 ```bash  
-git clone https://github.com/yourusername/stickynotes-pro.git  
+git clone https://github.com/AR1Ablock/Premium-StickyNotes---Organize-Record-and-Attach-Files-Effortlessly.git
 npm install  
 npm run dev
