@@ -1,0 +1,37 @@
+{
+  "name": "Sticky Colorful Notes App",
+  "short_name": "Sticky Notes",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#4CAF50",
+  "scope": "/",
+  "orientation": "portrait",
+  "lang": "en-US",
+  "description": "A beautiful, native-like notes app built with Vue.js.",
+  "icons": [
+    {
+      "src": "/App_Icon/note_1536.png",
+      "sizes": "1536x1536",
+      "type": "image/png"
+    },
+    {
+      "src": "/App_Icon/note_512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/App_Icon/note_1536.png",
+      "sizes": "1536x1536",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/App_Icon/note_512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
