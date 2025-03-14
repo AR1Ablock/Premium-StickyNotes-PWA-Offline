@@ -1477,18 +1477,14 @@ function Toggle_Note_Card_Color_Mode() {
 }
 
 const getShortText = (text) => {
-  if (navigator.userAgent.toLowerCase().indexOf("firefox") > -1) {
-    console.log("reached moz");
-    if (!text) return;
-    // Handle null/undefined cases
-    else if (window.outerWidth <= 500) return text.substring(0, 100) + "...";
-    else if (window.outerWidth > 500) return text.substring(0, 130) + "...";
+  if (!text) return ""; // Handle null/undefined cases
+  const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
+  const threshold =
+    window.outerWidth <= 500 ? (isFirefox ? 95 : 110) : isFirefox ? 130 : 140;
+  if (text.length > threshold) {
+    return text.substring(0, threshold) + "...";
   } else {
-    console.log("reached else moz");
-    if (!text) return;
-    // Handle null/undefined cases
-    else if (window.outerWidth <= 500) return text.substring(0, 110) + "...";
-    else if (window.outerWidth > 500) return text.substring(0, 140) + "...";
+    return text; // Return the full text if it doesn't exceed the threshold
   }
 };
 
@@ -1841,13 +1837,6 @@ function change_text_alignment() {
     console.log(error.message);
   }
 }
-
-/* function Toggle_Note_Form_Full_Screen() {
-  setTimeout(() => {
-    AdjustCameraScreenSize();
-  }, 10);
-  NoteWriter_Form_Full_Screen.value = !NoteWriter_Form_Full_Screen.value;
-} */
 
 function Turn_Off_Loading_Screen() {
   try {
@@ -2346,6 +2335,8 @@ async function Update_Note(note, media) {
     let updatedNote = null;
     let compressedMedia = null;
     let updatedMedia = null;
+    const Is_Media_Exist_for_Note = await db.media.get(note.id);
+
     // Compress the note using the Web Worker
     compressedNote = await compressNoteInWorker(note);
     console.log("[Frontend] Note compressed successfully.", compressedNote);
@@ -2355,25 +2346,29 @@ async function Update_Note(note, media) {
       updatedAt: new Date(),
     };
 
-    /*     if (
-      media.ImageFile.length > 0 ||
-      media.VideoFiles.length > 0 ||
-      media.AudioFiles.length > 0 ||
-      media.DocumentFiles.length > 0
-    ) { */
     compressedMedia = await compressNoteInWorker(media);
     updatedMedia = {
       blob: compressedMedia,
       updatedAt: new Date(),
     };
-    /* } */
 
     await db.transaction("rw", db.notes, db.media, async () => {
       await db.notes.update(note.id, updatedNote);
-      if (updatedMedia) {
-        await db.media.update(note.id, updatedMedia);
-        console.log("updating the media");
+      if (Is_Media_Exist_for_Note) {
+        if (updatedMedia) {
+          await db.media.update(note.id, updatedMedia);
+          console.log("updating the media");
+        }
+      } else {
+        // Create new media entry if none exists
+        await db.media.add({
+          id: note.id,
+          blob: compressedMedia,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
       }
+
       note.IsLoading = false;
     });
     Reset_Media_Object();
@@ -3266,16 +3261,16 @@ function AddNoteBtn() {
 
 async function Get_Media_from_Db(id) {
   let media = null;
-  let Decompressed_Media = null;
+  let Get_Decompressed_Media = null;
   try {
     media = await db.media.get(id); // Wait for the media to be fetched
     if (!media) {
       console.log("No media found");
       return null;
     }
-    Decompressed_Media = await CreateWorker(media.blob, false); // Wait for processing
-    console.log("Decompressed_Media ", Decompressed_Media);
-    return Decompressed_Media;
+    Get_Decompressed_Media = await CreateWorker(media.blob, false); // Wait for processing
+    console.log("Decompressed_Media ", Get_Decompressed_Media);
+    return Get_Decompressed_Media;
   } catch (error) {
     console.log(error.message);
     return null;
@@ -3284,7 +3279,7 @@ async function Get_Media_from_Db(id) {
       "Cleaning up media after get from database and decompressed it for RO_..."
     );
     media = null;
-    Decompressed_Media = null;
+    Get_Decompressed_Media = null;
   }
 }
 
@@ -3347,36 +3342,50 @@ async function EditBtn(index) {
     CurrentIndex.value = index;
     /* Useful for edit mode like send all note data to array se delete buttons can acees it then modify & send it back to note*/
     if (EditMode.value) {
-      let Decompressed_Media = await Get_Media_from_Db(data.value[index].id);
+      let Pull_Decompressed_Media = await Get_Media_from_Db(data.value[index].id);
       console.log("Decompressed_Media ", Decompressed_Media);
 
       // Push items into edit mode arrays
-      Decompressed_Media.ImageFile.forEach((element) => {
-        Edit_Mode_images.value.push(element);
-        console.log("db note item ", element);
-      });
+      if (Pull_Decompressed_Media) {
+        Pull_Decompressed_Media.ImageFile.forEach((element) => {
+          Edit_Mode_images.value.push(element);
+          console.log("db note item ", element);
+        });
 
-      Decompressed_Media.AudioFiles.forEach((element) => {
-        Edit_Mode_AudioStorage.value.push(element);
-        console.log("db note item ", element);
-      });
+        Pull_Decompressed_Media.AudioFiles.forEach((element) => {
+          Edit_Mode_AudioStorage.value.push(element);
+          console.log("db note item ", element);
+        });
 
-      Decompressed_Media.VideoFiles.forEach((element) => {
-        Edit_Mode_VideoStorage.value.push(element);
-        console.log("db note item ", element);
-      });
+        Pull_Decompressed_Media.VideoFiles.forEach((element) => {
+          Edit_Mode_VideoStorage.value.push(element);
+          console.log("db note item ", element);
+        });
 
-      Decompressed_Media.DocumentFiles.forEach((element) => {
-        Edit_Mode_DocumentStorage.value.push(element);
-        console.log("db note item ", element);
-      });
+        Pull_Decompressed_Media.DocumentFiles.forEach((element) => {
+          Edit_Mode_DocumentStorage.value.push(element);
+          console.log("db note item ", element);
+        });
 
-      // Clear the database-fetched arrays
-      Decompressed_Media.ImageFile.splice(0, Decompressed_Media.ImageFile.length);
-      Decompressed_Media.AudioFiles.splice(0, Decompressed_Media.AudioFiles.length);
-      Decompressed_Media.VideoFiles.splice(0, Decompressed_Media.VideoFiles.length);
-      Decompressed_Media.DocumentFiles.splice(0, Decompressed_Media.DocumentFiles.length);
-      //Decompressed_Media = null;
+        // Clear the database-fetched arrays
+        Pull_Decompressed_Media.ImageFile.splice(
+          0,
+          Pull_Decompressed_Media.ImageFile.length
+        );
+        Pull_Decompressed_Media.AudioFiles.splice(
+          0,
+          Pull_Decompressed_Media.AudioFiles.length
+        );
+        Pull_Decompressed_Media.VideoFiles.splice(
+          0,
+          Pull_Decompressed_Media.VideoFiles.length
+        );
+        Pull_Decompressed_Media.DocumentFiles.splice(
+          0,
+          Pull_Decompressed_Media.DocumentFiles.length
+        );
+      }
+      EditBtn;
 
       console.log("Edit_Mode_images ", Edit_Mode_images.value);
       console.log("Edit_Mode_AudioStorage ", Edit_Mode_AudioStorage.value);
