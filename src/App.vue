@@ -7,17 +7,23 @@
     </div>
 
     <!-- Header -->
-    <div class="Top_Container">
+    <div
+      class="Top_Container"
+      :style="
+        isAddBtnPressed || IsRoViewNoteOpen ? { borderBottom: '2px solid #e3b23c30' } : {}
+      "
+    >
       <div class="searchbar" :class="{ active: Blur_Background_WhileOpening_Note }">
         <h1>Sticky Notes</h1>
         <div class="search-container">
           <input
+            name="Search_Bar"
             type="text"
             placeholder="Search notes..."
             class="searchinput showinput"
             ref="SearchInput_Element"
             v-model.trim="inputData"
-            @input="Debounce_Search"
+            @input="Making_Debounce"
             @keydown.enter.prevent
           />
           <svg viewBox="0 0 24 24">
@@ -76,18 +82,23 @@
         class="cards"
         ref="Card"
         v-for="(item, index) in data"
-        :key="`${item.id}-${index}-${sort_order}`"
-        :class="[{ smoothhide: data[index].isCardGoingDeleted }]"
+        :key="item.id + sort_order"
+        :class="[
+          { smoothhide: data[index].isCardGoingDeleted },
+          { disable_Card_While_Saving: data[index].IsLoading },
+        ]"
         :style="{ 'background-color': data[index].Card_Para_Color }"
       >
         <div
           class="Title_Con"
           :style="{ 'background-color': data[index].Card_Title_Color }"
         >
-          <p class="Card_Title">{{ item.title.substring(0, 18) }}</p>
+          <p class="Card_Title">{{ getShortText(item.title.substring(0, 18)) }}</p>
         </div>
         <div class="Para_Con" @click="RO_ViewNotePage(index)">
-          <p class="Card_Para">{{ getShortText(item.userWrote) }}</p>
+          <p class="Card_Para" ref="Each_Note_Preview">
+            {{ getShortText(item.userWrote) }}
+          </p>
         </div>
         <div
           class="Upload_Loader Upload_Loader_active"
@@ -152,13 +163,538 @@
         <div class="create_edit_model_header">
           <h3 ref="Note_heading_element" class="model_h3">Create Note</h3>
 
-          <div class="attachmentBtns">
-            <label for="fileInput" class="custom_Choose_file" title="Attach File">
+          <div class="attachmentBtns MarkDownMenu" v-show="Toggle_MarkDown_Menu">
+            <button ref="HeadingBtn" title="Heading" @click="heading">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <!-- Rounded black background with gold border -->
+                <rect
+                  x="1"
+                  y="1"
+                  width="30"
+                  height="30"
+                  rx="6"
+                  ry="6"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+                <!-- Centered text for heading -->
+                <text
+                  x="16"
+                  y="22"
+                  text-anchor="middle"
+                  font-family="Georgia"
+                  fill="#FFD700"
+                  font-weight="bold"
+                >
+                  H1
+                </text>
+              </svg>
+            </button>
+
+            <button ref="BoldBtn" title="Bold" @click="bold">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <!-- Background -->
+                <rect
+                  x="1"
+                  y="1"
+                  width="30"
+                  height="30"
+                  rx="6"
+                  ry="6"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+                <!-- Bold letter -->
+                <text
+                  x="16"
+                  y="22"
+                  text-anchor="middle"
+                  font-family="Georgia"
+                  fill="#FFD700"
+                  font-weight="bold"
+                >
+                  B
+                </text>
+              </svg>
+            </button>
+
+            <button ref="ItalicBtn" title="Italic" @click="italic">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <!-- Background -->
+                <rect
+                  x="1"
+                  y="1"
+                  width="30"
+                  height="30"
+                  rx="6"
+                  ry="6"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+                <!-- Italic letter -->
+                <text
+                  x="16"
+                  y="22"
+                  text-anchor="middle"
+                  font-family="Georgia"
+                  fill="#FFD700"
+                  font-style="italic"
+                >
+                  I
+                </text>
+              </svg>
+            </button>
+
+            <button ref="CodeBtn" title="Code" @click="code">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                style="display: block"
+              >
+                <!-- Rounded square container -->
+                <rect
+                  x="1"
+                  y="1"
+                  width="22"
+                  height="22"
+                  rx="4"
+                  ry="4"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+
+                <!-- Curly braces in gold -->
+                <path
+                  d="M9 8c-1 1-1 2.5-1 4s0 3 1 4"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M15 16c1-1 1-2.5 1-4s0-3-1-4"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+
+            <button ref="LinkBtn" title="Link" @click="link">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                style="display: block"
+              >
+                <!-- Rounded square container -->
+                <rect
+                  x="1"
+                  y="1"
+                  width="22"
+                  height="22"
+                  rx="4"
+                  ry="4"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+
+                <!-- Larger chain link: two ovals -->
+                <!-- Left oval -->
+                <path
+                  d="M4 12c0-2 1.6-3.5 3.5-3.5h2c2 0 3.5 1.6 3.5 3.5s-1.6 3.5-3.5 3.5h-2c-2 0-3.5-1.6-3.5-3.5z"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <!-- Right oval -->
+                <path
+                  d="M11.5 12c0-2 1.6-3.5 3.5-3.5h2c2 0 3.5 1.6 3.5 3.5s-1.6 3.5-3.5 3.5h-2c-2 0-3.5-1.6-3.5-3.5z"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+
+            <button ref="UnderlineBtn" title="Underline" @click="underline">
+              <svg
+                width="32px"
+                height="32px"
+                viewBox="1 0 16 12.5"
+                fill="#FFD700"
+                stroke="#FFD700"
+                stroke-width="0.6"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g transform="scale(1.15) translate(-0.7, -0.7)">
+                  <path
+                    d="M5.5 1a.5.5 0 0 1 .5.5v5a2.5 2.5 0 0 0 5 0v-5a.5.5 0 0 1 1 0v5a3.5 3.5 0 0 1-7 0v-5a.5.5 0 0 1 .5-.5z"
+                  />
+                  <path d="M2.5 11.3a.5.5 0 0 0 0 1h11a.5.5 0 0 0 0-1h-11z" />
+                </g>
+              </svg>
+            </button>
+
+            <button ref="StrikerBtn" title="Strike" @click="striker">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <!-- Background -->
+                <rect
+                  x="1"
+                  y="1"
+                  width="30"
+                  height="30"
+                  rx="6"
+                  ry="6"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+                <!-- Strike letter -->
+                <text
+                  x="16"
+                  y="22"
+                  text-anchor="middle"
+                  font-family="Georgia"
+                  fill="#FFD700"
+                >
+                  S
+                </text>
+                <!-- Horizontal line for strike-through -->
+                <line x1="8" y1="16" x2="24" y2="16" stroke="#FFD700" stroke-width="2" />
+              </svg>
+            </button>
+
+            <button
+              ref="CheckboxBtn"
+              @click="Checkbox"
+              title="Checkbox"
+              :class="{ Active_btn: isCheckboxSticky }"
+            >
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+              >
+                <g transform="translate(12 12) scale(1.2) translate(-12 -12)">
+                  <!-- Outer box -->
+                  <rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
+                    rx="3"
+                    stroke="#FFD700"
+                    stroke-width="1.5"
+                    fill="none"
+                  />
+                  <!-- Checkmark -->
+                  <path
+                    d="M7 12l4 4 6-8"
+                    stroke="#FFD700"
+                    stroke-width="2"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </g>
+              </svg>
+            </button>
+
+            <button ref="FontColorBtn" title="Text Color" @click="textColor">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 32 32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <!-- Black background with gold border -->
+                <rect
+                  x="1"
+                  y="1"
+                  width="30"
+                  height="30"
+                  rx="6"
+                  ry="6"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+
+                <!-- Large "A" in gold -->
+                <text
+                  x="16"
+                  y="21.5"
+                  text-anchor="middle"
+                  font-family="Georgia"
+                  font-weight="bold"
+                  fill="#FFD700"
+                >
+                  A
+                </text>
+                <!-- Gold paint droplet to indicate color -->
+                <!-- You can tweak the path for a different droplet shape -->
+                <path
+                  d="M22 11 
+                             c0 2 -3 3 -3 6 
+                             s1.5 4 3 4 
+                             s3 -1.5 3 -4 
+                             s-3 -4 -3 -6z"
+                  fill="#FFD700"
+                />
+              </svg>
+            </button>
+
+            <button ref="HighlightBtn" title="Highlight" @click="highlight">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 32 32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <!-- Black background with gold border -->
+                <rect
+                  x="1"
+                  y="1"
+                  width="30"
+                  height="30"
+                  rx="6"
+                  ry="6"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+
+                <!-- Gold highlight rectangle behind the "A" -->
+                <rect x="8" y="9" width="16" height="14" fill="#FFD700" />
+
+                <!-- Large "A" in gold -->
+                <text
+                  x="16"
+                  y="21"
+                  text-anchor="middle"
+                  font-family="Georgia"
+                  font-weight="bold"
+                  fill="black"
+                >
+                  A
+                </text>
+              </svg>
+            </button>
+
+            <button ref="UnorderListBtn" title="Bullet Points" @click="unorderedList">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <!-- Background -->
+                <rect
+                  x="1"
+                  y="1"
+                  width="30"
+                  height="30"
+                  rx="6"
+                  ry="6"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+                <!-- Three bullet points with horizontal lines -->
+                <circle cx="10" cy="10" r="2" fill="#FFD700" />
+                <line x1="14" y1="10" x2="26" y2="10" stroke="#FFD700" stroke-width="2" />
+                <circle cx="10" cy="16" r="2" fill="#FFD700" />
+                <line x1="14" y1="16" x2="26" y2="16" stroke="#FFD700" stroke-width="2" />
+                <circle cx="10" cy="22" r="2" fill="#FFD700" />
+                <line x1="14" y1="22" x2="26" y2="22" stroke="#FFD700" stroke-width="2" />
+              </svg>
+            </button>
+
+            <button ref="OrderListBtn" title="Numbering Wise" @click="orderedList">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <!-- Background -->
+                <rect
+                  x="1"
+                  y="1"
+                  width="30"
+                  height="30"
+                  rx="6"
+                  ry="6"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+                <!-- Numbers on the left -->
+                <text x="6" y="12" font-family="Georgia" font-size="10" fill="#FFD700">
+                  1
+                </text>
+                <text x="6" y="20" font-family="Georgia" font-size="10" fill="#FFD700">
+                  2
+                </text>
+                <text x="6" y="28" font-family="Georgia" font-size="10" fill="#FFD700">
+                  3
+                </text>
+                <!-- Corresponding horizontal lines for list items -->
+                <line x1="14" y1="10" x2="26" y2="10" stroke="#FFD700" stroke-width="2" />
+                <line x1="14" y1="18" x2="26" y2="18" stroke="#FFD700" stroke-width="2" />
+                <line x1="14" y1="26" x2="26" y2="26" stroke="#FFD700" stroke-width="2" />
+              </svg>
+            </button>
+
+            <button ref="QuoteBtn" title="Quote" @click="blockquote">
+              <svg
+                width="32px"
+                height="32px"
+                viewBox="0 0 16 16"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="#FFD700"
+                stroke="#FFD700"
+                stroke-width="0.5"
+              >
+                <g id="SVGRepo_iconCarrier">
+                  <path
+                    d="M2.5 3a.5.5 0 0 0 0 1h11a.5.5 0 0 0 0-1h-11zm5 3a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1h-6zm0 3a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1h-6zm-5 3a.5.5 0 0 0 0 1h11a.5.5 0 0 0 0-1h-11zm.79-5.373c.112-.078.26-.17.444-.275L3.524 6c-.122.074-.272.17-.452.287-.18.117-.35.26-.51.428a2.425 2.425 0 0 0-.398.562c-.11.207-.164.438-.164.692 0 .36.072.65.217.873.144.219.385.328.72.328.215 0 .383-.07.504-.211a.697.697 0 0 0 .188-.463c0-.23-.07-.404-.211-.521-.137-.121-.326-.182-.568-.182h-.282c.024-.203.065-.37.123-.498a1.38 1.38 0 0 1 .252-.37 1.94 1.94 0 0 1 .346-.298zm2.167 0c.113-.078.262-.17.445-.275L5.692 6c-.122.074-.272.17-.452.287-.18.117-.35.26-.51.428a2.425 2.425 0 0 0-.398.562c-.11.207-.164.438-.164.692 0 .36.072.65.217.873.144.219.385.328.72.328.215 0 .383-.07.504-.211a.697.697 0 0 0 .188-.463c0-.23-.07-.404-.211-.521-.137-.121-.326-.182-.568-.182h-.282a1.75 1.75 0 0 1 .118-.492c.058-.13.144-.254.257-.375a1.94 1.94 0 0 1 .346-.3z"
+                  />
+                </g>
+              </svg>
+            </button>
+
+            <button title="Undo" @click="undoAction">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="32"
+                height="32"
+                viewBox="0 0 122.04 122.88"
+              >
+                <!-- Scale increased to 85% and re-centered -->
+                <g transform="translate(9.153,9.216) scale(0.85)">
+                  <path
+                    d="M4.73,9.3v39.28h39.28l4.63,0l-3.27-3.28L33.91,33.85c0.76-0.73,1.54-1.44,2.36-2.11
+         c1.08-0.88,2.22-1.72,3.38-2.48l0,0c6.02-3.92,13.21-6.21,20.94-6.21l0.01,0v-0.01c10.59,0,20.18,4.3,27.12,11.24
+         c6.94,6.94,11.24,16.53,11.24,27.11h-0.01v0.05h0.01c0,10.59-4.3,20.19-11.24,27.12c-6.94,6.94-16.53,11.24-27.11,11.24v-0.01
+         l-0.08,0v0.01c-3.7,0-7.39-0.54-10.93-1.59v0c-1.95-0.58-3.87-1.33-5.71-2.22c-9.39-4.54-16.65-12.8-19.87-22.87l-0.43-1.33
+         L0,71.82l0.47,2.3l0.01,0.06v0.01c0.8,3.84,2,7.62,3.53,11.24v0.01c1.51,3.55,3.38,6.98,5.53,10.19
+         c11.03,16.43,29.78,27.25,51.05,27.25l0.01,0v-0.01c16.96,0,32.33-6.88,43.43-17.99v-0.01c11.1-11.11,17.98-26.45,17.98-43.4
+         l0.01,0v-0.05h-0.01c0-16.96-6.88-32.32-18-43.43l0,0C92.93,6.89,77.58,0.02,60.63,0.01V0l-0.06,0v0.01
+         c-8.71,0-17.01,1.82-24.51,5.1c-1.21,0.53-2.42,1.11-3.6,1.71c-5.48,2.83-10.47,6.46-14.83,10.74L8,7.95
+         L4.73,4.67V9.3L4.73,9.3L4.73,9.3z"
+                    fill="none"
+                    stroke="#FFD700"
+                    stroke-width="10"
+                    stroke-linejoin="round"
+                    stroke-linecap="round"
+                  />
+                </g>
+              </svg>
+            </button>
+
+            <button title="Redo" @click="redoAction">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="32"
+                height="32"
+                viewBox="0 0 122.04 122.88"
+              >
+                <!-- Mirror horizontally to flip undo → redo -->
+                <g transform="translate(122.04 0) scale(-1 1)">
+                  <!-- Scale and center as before -->
+                  <g transform="translate(9.153 9.216) scale(0.85)">
+                    <path
+                      d="M4.73,9.3v39.28h39.28l4.63,0l-3.27-3.28L33.91,33.85c0.76-0.73,1.54-1.44,2.36-2.11
+           c1.08-0.88,2.22-1.72,3.38-2.48l0,0c6.02-3.92,13.21-6.21,20.94-6.21l0.01,0v-0.01c10.59,0,20.18,4.3,27.12,11.24
+           c6.94,6.94,11.24,16.53,11.24,27.11h-0.01v0.05h0.01c0,10.59-4.3,20.19-11.24,27.12c-6.94,6.94-16.53,11.24-27.11,11.24v-0.01
+           l-0.08,0v0.01c-3.7,0-7.39-0.54-10.93-1.59v0c-1.95-0.58-3.87-1.33-5.71-2.22c-9.39-4.54-16.65-12.8-19.87-22.87l-0.43-1.33
+           L0,71.82l0.47,2.3l0.01,0.06v0.01c0.8,3.84,2,7.62,3.53,11.24v0.01c1.51,3.55,3.38,6.98,5.53,10.19
+           c11.03,16.43,29.78,27.25,51.05,27.25l0.01,0v-0.01c16.96,0,32.33-6.88,43.43-17.99v-0.01c11.1-11.11,17.98-26.45,17.98-43.4
+           l0.01,0v-0.05h-0.01c0-16.96-6.88-32.32-18-43.43l0,0C92.93,6.89,77.58,0.02,60.63,0.01V0l-0.06,0v0.01
+           c-8.71,0-17.01,1.82-24.51,5.1c-1.21,0.53-2.42,1.11-3.6,1.71c-5.48,2.83-10.47,6.46-14.83,10.74L8,7.95
+           L4.73,4.67V9.3L4.73,9.3L4.73,9.3z"
+                      fill="none"
+                      stroke="#FFD700"
+                      stroke-width="10"
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                    />
+                  </g>
+                </g>
+              </svg>
+            </button>
+
+            <button title="Copy" @click="copySmartContent">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="32"
+                height="32"
+                viewBox="0 0 32 32"
+              >
+                <!-- Back sheet -->
+                <rect
+                  x="6"
+                  y="5"
+                  width="20"
+                  height="24"
+                  rx="3"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+                <!-- Front sheet -->
+                <rect
+                  x="3"
+                  y="1"
+                  width="20"
+                  height="24"
+                  rx="3"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+              </svg>
+            </button>
+
+            <button
+              class="close_Mark_Down_Menu"
+              @click="Toggle_MarkDown_Menu = false"
+              title="Close MarkUp Menu"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
                 height="24"
                 viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M18 6L6 18"></path>
+                <path d="M6 6l12 12"></path>
+              </svg>
+            </button>
+            <!-- ///////////// -->
+          </div>
+
+          <div class="attachmentBtns" v-if="!Toggle_MarkDown_Menu">
+            <label for="fileInput" class="custom_Choose_file" title="Attach File">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 1 24 24"
                 fill="none"
                 stroke="#FFD700"
                 stroke-width="2"
@@ -412,6 +948,66 @@
                 </defs>
               </svg>
             </button>
+
+            <button
+              class="MarkDownMenu"
+              @click="
+                Toggle_MarkDown_Menu = !Toggle_MarkDown_Menu;
+                Front_Back_Camera = false;
+              "
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 32 32"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <!-- Black background with gold border -->
+                <rect
+                  x="1"
+                  y="1"
+                  width="30"
+                  height="30"
+                  rx="6"
+                  ry="6"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                />
+
+                <!-- Left angled bracket -->
+                <path
+                  d="M10 8 L5 16 L10 24"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+
+                <!-- Right angled bracket -->
+                <path
+                  d="M22 8 L27 16 L22 24"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+
+                <!-- Center "A" -->
+                <text
+                  x="16"
+                  y="20"
+                  text-anchor="middle"
+                  font-family="Georgia, serif"
+                  fill="#FFD700"
+                  font-weight="bold"
+                >
+                  A
+                </text>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -543,11 +1139,12 @@
 
         <!-- Done Mode End -->
         <input
+          name="Main_Note_Writing_Area"
           ref="focusOnInput"
           type="text"
           class="title"
           placeholder="Note Title"
-          v-model.trim="CurrentlyWritingTitle"
+          v-model="CurrentlyWritingTitle"
         />
 
         <!--  -->
@@ -703,16 +1300,23 @@
         <!--  -->
 
         <div class="notes_Writing_Area_Wrapper">
-          <textarea
+          <div
             name="notewriting"
             class="model_note"
-            ref="TextAreaElement"
-            cols="30"
-            rows="10"
-            placeholder="Write Your Thoughts"
-            v-model.trim="CurrentlyWritingMessage"
-          >
-          </textarea>
+            :class="{ empty: isEmpty }"
+            ref="editor"
+            :data-placeholder="placeholderText"
+            contenteditable="true"
+            @input="
+              () => {
+                updateActiveStates();
+                checkPlaceholder();
+              }
+            "
+            @mouseup="updateActiveStates"
+            @keyup="updateActiveStates"
+            @paste="paste"
+          ></div>
           <video class="vid" ref="videoPreview" autoplay muted></video>
         </div>
 
@@ -1023,15 +1627,18 @@
             </div>
           </section>
 
-          <pre class="View_Text_In_UI View_Text_In_UI_Title">{{
-            SendNoteForView_Title
-          }}</pre>
-          <pre ref="Note_View_UI_Text_Element" class="View_Text_In_UI">{{
-            SendNoteForView_Message
-          }}</pre>
+          <div
+            class="View_Text_In_UI View_Text_In_UI_Title"
+            v-html="SendNoteForView_Title"
+          ></div>
+          <div
+            ref="Note_View_UI_Text_Element"
+            class="View_Text_In_UI"
+            v-html="SendNoteForView_Message"
+          ></div>
 
           <div class="media_in_note_view_ui">
-            <div class="media_in_note_view_ui_width">
+            <div ref="Note_View_UI_Media_Container" class="media_in_note_view_ui_width">
               <div
                 class="img"
                 v-for="(item, index) in SendImageForView"
@@ -1248,13 +1855,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onUnmounted, computed } from "vue";
+import {
+  ref,
+  onMounted,
+  watch,
+  onUnmounted,
+  computed,
+  onBeforeUnmount,
+  markRaw,
+} from "vue";
 import Dexie from "dexie";
 import { debounce } from "lodash";
 // .................................... All Variables .........................................
 let isAddBtnPressed = ref(false);
-let CurrentlyWritingMessage = ref("");
-let TextAreaElement = ref();
+/* let CurrentlyWritingMessage = ref(); */
 let Note_Createt_Close_btn = ref();
 let DisableDoneBtnElement = ref();
 let CurrentIndex = ref();
@@ -1405,13 +2019,14 @@ let recordedChunks = ref([]);
 let recordAudioButton = ref();
 let recordVideoButton = ref();
 let Front_Back_Camera = ref(false);
+let Toggle_MarkDown_Menu = ref(false);
 let videoPreview = ref();
 let overlayElement = ref();
 let mediaRecorder = "";
 let currentStream = ""; // Store the MediaStream object
 let i = 0;
 let j = 0;
-let Max_Accumulated_Attachments_Size_Buffer = ref(10 * 1024 * 1024);
+let Max_Accumulated_Attachments_Size_Buffer = ref(20 * 1024 * 1024);
 let Max_Accumulated_Attachments_Size = ref(Max_Accumulated_Attachments_Size_Buffer.value);
 /////
 let Done_Mode_Toggle_Video_Preview = ref(false);
@@ -1434,7 +2049,7 @@ let Toggle_Critical_Error = ref(false);
 let Critical_Error_Message = ref();
 let Save_The_Create_Notes_Max_Accu_Attachment_Capacity_While_Switching_To_Edit_Note = ref();
 let controller = new AbortController(); //we pass controller as arg to fetch method and bakcned accept it as cancilation token parameter so useful when we reload or call conroller.abort then fetch will stop and throw error which will catched by catch block and http line will get closed and backend cancellation token will get expired and backend stop all operations where we setted that token.
-let Media = ref({ Video_Stop_Duration: 21000, Audio_Stop_Duration: 180000 });
+let Media = ref({ Video_Stop_Duration: 31000, Audio_Stop_Duration: 180000 });
 let Toggle_Reading_Form_Full_Screen = ref(false);
 let Total_Storage_Capacity = ref(null);
 let Used_Storage_Capacity = ref(null);
@@ -1442,7 +2057,6 @@ let Used_Storage_Capacity_Percentage = ref(null);
 let Used_Storage_Capacity_Element = ref();
 let sort_order = ref("desc");
 let Blur_Background_WhileOpening_Note = ref(false);
-const db = new Dexie("MyNotesDB");
 const bg = ["#131313", "rgb(74 109 169)", "green", "#e2e2e2"];
 const clr = ["#979797", "#dbdbdb", "white", "black"];
 const colorIndex = ref(0);
@@ -1463,21 +2077,221 @@ let flash_light_btn_element = ref();
 let Current_Video_Stream_Track = ref();
 let Is_Video_Mirroring = ref(false);
 let supportedMime = ref("");
+let Each_Note_Preview = ref();
+let Note_View_UI_Media_Container = ref();
+const db = new Dexie("MyNotesDB");
+db.version(1).stores({
+  notes: "id, note, createdAt, updatedAt",
+  media: "id, blob, createdAt, updatedAt",
+});
+const refreshKey = ref(new Date().toISOString());
+// Buttons
+
 // All Methods.
+import {
+  bold,
+  blockquote,
+  italic,
+  heading,
+  link,
+  copySmartContent,
+  code,
+  underline,
+  striker,
+  unorderedList,
+  orderedList,
+  textColor,
+  highlight,
+  undoAction,
+  redoAction,
+  Checkbox,
+  isCheckboxSticky,
+  handleEnterKey,
+  editor,
+  fill_both,
+  paste,
+  updatePreview,
+} from "./components/Editor";
+
+let BoldBtn = ref();
+let ItalicBtn = ref();
+let HeadingBtn = ref();
+let CodeBtn = ref();
+let QuoteBtn = ref();
+let LinkBtn = ref();
+let OrderListBtn = ref();
+let UnorderListBtn = ref();
+let UnderlineBtn = ref();
+let StrikerBtn = ref();
+let FontColorBtn = ref();
+let HighlightBtn = ref();
+let CheckboxBtn = ref();
+
+const placeholderText = "Write Your Thoughts...";
+let isEmpty = ref(true);
+
+function checkPlaceholder() {
+  const text = editor.value.innerText.trim() || editor.value.innerHTML.trim();
+  isEmpty.value = text === "";
+}
+
+function getSelectedNode() {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return null;
+  let node = sel.getRangeAt(0).commonAncestorContainer;
+  return node.nodeType === 3 ? node.parentNode : node;
+}
+
+function updateActiveStates() {
+  const selectionColor = document.queryCommandValue("foreColor");
+  FontColorBtn.value?.classList.toggle(
+    "Active_btn",
+    selectionColor && selectionColor !== "rgb(255, 255, 255)"
+  );
+
+  const highlight =
+    document.queryCommandValue("hiliteColor") || document.queryCommandValue("backColor");
+  HighlightBtn.value?.classList.toggle(
+    "Active_btn",
+    highlight && highlight !== "transparent" && highlight !== "rgb(47, 47, 47)"
+  );
+
+  /*   UnderlineBtn.value?.classList.toggle("active", document.queryCommandState("underline")); */
+  BoldBtn.value?.classList.toggle("Active_btn", document.queryCommandState("bold"));
+  ItalicBtn.value?.classList.toggle("Active_btn", document.queryCommandState("italic"));
+  UnderlineBtn.value?.classList.toggle(
+    "Active_btn",
+    document.queryCommandState("underline")
+  );
+  StrikerBtn.value?.classList.toggle(
+    "Active_btn",
+    document.queryCommandState("strikeThrough")
+  );
+  OrderListBtn.value?.classList.toggle(
+    "Active_btn",
+    document.queryCommandState("insertOrderedList")
+  );
+  UnorderListBtn.value?.classList.toggle(
+    "Active_btn",
+    document.queryCommandState("insertUnorderedList")
+  );
+  const node = getSelectedNode();
+  HeadingBtn.value?.classList.toggle("Active_btn", node?.matches("h1,h2,h3,h4,h5,h6"));
+  CodeBtn.value?.classList.toggle("Active_btn", !!node?.closest("pre"));
+  QuoteBtn.value?.classList.toggle(
+    "Active_btn",
+    !!getSelectedNode()?.closest("blockquote")
+  );
+  LinkBtn.value?.classList.toggle("Active_btn", !!node?.closest("a"));
+
+  /*   const isCheckbox = node?.tagName?.toLowerCase() === "input" && node.type === "checkbox";
+  CheckboxBtn.value?.classList.toggle("Active_btn", isCheckbox); */
+}
+
+fill_both(getSelectedNode, updateActiveStates);
+
+document.addEventListener("selectionchange", updateActiveStates);
+
+onMounted(() => {
+  updateActiveStates();
+  editor.value.addEventListener("keydown", (event) => {
+    if (handleEnterKey(event)) {
+      event.preventDefault(); // Prevent default if handled
+    }
+  });
+});
+
 // .........................................All The Functions .....................................................
 
-function Toggle_Note_Card_Color_Mode() {
-  let msg = "";
-  Is_Sticky_Colorful_Card.value = !Is_Sticky_Colorful_Card.value;
-  localStorage.setItem("Colorful_Notes", Is_Sticky_Colorful_Card.value);
-  Is_Sticky_Colorful_Card.value
-    ? (msg = "Colorful Notes Enabled - Your Next Notes Will Be Vibrant!")
-    : (msg = "Standard Notes Active - New Notes Will Be Classic.");
-  Show_Create_Edit_Model_Warning(msg, 5000);
+/* async function openDB(db) {
+  try {
+    if (!db.isOpen()) {
+      await db.open();
+      console.log("Dexie DB opened.");
+    } else {
+      console.log("Dexie DB already open.");
+    }
+  } catch (error) {
+    console.error("Failed to open Dexie DB:", error);
+  }
 }
+
+
+function closeDB(db) {
+  try {
+    db.close();
+    console.log("Dexie DB closed.");
+  } catch (error) {
+    console.error("Failed to close Dexie DB:", error);
+  }
+
+demo usage:
+
+ await openDB(db);
+} */
+
+function Toggle_Note_Card_Color_Mode() {
+  try {
+    let msg = "";
+    Is_Sticky_Colorful_Card.value = !Is_Sticky_Colorful_Card.value;
+    localStorage.setItem("Colorful_Notes", Is_Sticky_Colorful_Card.value);
+    Is_Sticky_Colorful_Card.value
+      ? (msg = "Colorful Notes Enabled - Your Next Notes Will Be Vibrant!")
+      : (msg = "Standard Notes Active - New Notes Will Be Classic.");
+    Show_Create_Edit_Model_Warning(msg, 5000);
+  } catch (error) {
+    console.log(error.message);
+  }
+}
+
+const getCleanText = (text) =>
+  !text
+    ? ""
+    : text
+        // 1) Remove fenced code blocks
+        .replace(/```([\s\S]*?)```/g, "$1")
+        // 2) Remove inline code
+        .replace(/`([^`]+)`/g, "$1")
+        // 3) Remove headings (#)
+        .replace(/^#{1,6}\s+/gm, "")
+        // 4) Remove blockquotes (">")
+        .replace(/^>\s?/gm, "")
+        // 5) Remove horizontal rules
+        .replace(/^(---|\*\*\*|___)$/gm, "")
+        // 6) Remove combined bold+italic, bold, italic, strikethrough
+        .replace(/(\*\*\*|___)(.*?)\1/g, "$2")
+        .replace(/(\*\*|__)(.*?)\1/g, "$2")
+        .replace(/(\*|_)(.*?)\1/g, "$2")
+        .replace(/~~(.*?)~~/g, "$1")
+        // 7) Remove Markdown links/images
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
+        .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, "$1")
+        // 8) Remove custom [color] / [bg] tags
+        .replace(/\[\/?(color|bg)(=[^\]]+)?\]/gi, "")
+        // 9) Remove list markers at start of line
+        .replace(/^\s*([-*+]|(\d+\.) )\s+/gm, "")
+        // 10) Remove HTML tags
+        .replace(/<[^>]*>/g, "")
+        // 11) Remove table separator lines (e.g. "|:---|---:|")
+        .replace(/^\s*:?-+:?\s*(\|\s*:?-+:?\s*)+$/gm, "")
+        // 12) Remove table data/header lines (start with "|")
+        .replace(/^\|.*?\|.*$/gm, "")
+        // 13) clean # to n numbers
+        .replace(/^#+\s*/gm, "")
+        // 14) clan &xxx (next line)
+        .replace(/&nbsp;/g, "")
+        .replace(/&lt;/g, "")
+        .replace(/h3&gt;/g, "")
+        // 15) Trim & normalize spaces
+        .trim()
+        .replace(/\s\s+/g, " ");
 
 const getShortText = (text) => {
   if (!text) return ""; // Handle null/undefined cases
+
+  // Remove bold/italic/strikethrough, color, heading, bullet markers
+  let clone_text = text;
+  text = getCleanText(clone_text);
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   const threshold =
     window.outerWidth <= 500 ? (isFirefox ? 95 : 110) : isFirefox ? 130 : 140;
@@ -1491,45 +2305,60 @@ const getShortText = (text) => {
 let Cancel_Operation = ref(false);
 
 function abort_Controller() {
-  if (Cancel_Operation.value) {
-    console.log("aborted called");
-    controller.abort();
-    Cancel_Operation.value = false;
-    resetController();
-    return true;
-  } else {
-    return false;
+  try {
+    if (Cancel_Operation.value) {
+      console.log("aborted called");
+      controller.abort();
+      Cancel_Operation.value = false;
+      resetController();
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    console.log(error.message);
   }
 }
 
 async function runAnimation(el) {
-  if (abort_Controller()) return;
-  console.log("calling animation method");
-  await Lazy_Load_With_animation(el);
+  try {
+    if (abort_Controller()) return;
+    console.log("calling animation method");
+    await Lazy_Load_With_animation(el);
+  } catch (error) {
+    console.log(error.message);
+  }
 }
 
 let vLoader = {
   async mounted(el, binding) {
-    console.log("mounted");
-    // Initially hide the media element
-    el.style.transform = "scale(0)";
-    // Set the source from the binding value
-    if (abort_Controller()) return;
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    if (abort_Controller()) return;
-    el.src = binding.value;
+    try {
+      console.log("mounted");
+      // Initially hide the media element
+      el.style.transform = "scale(0)";
+      if (el.tagName === "VIDEO") {
+        el.nextSibling.style.transform = "scale(0)";
+      }
+      // Set the source from the binding value
+      if (abort_Controller()) return;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (abort_Controller()) return;
+      el.src = binding.value;
 
-    // Determine the appropriate event
-    let eventName = "load";
-    if (el.tagName === "VIDEO" || el.tagName === "AUDIO") {
-      eventName = "loadeddata";
-    }
+      // Determine the appropriate event
+      let eventName = "load";
+      if (el.tagName === "VIDEO" || el.tagName === "AUDIO") {
+        eventName = "loadeddata";
+      }
 
-    // there is an issue with IMG elements that if it is cached in borowser then it means it already completed and load method wont get called so if it is completed then running the animation method and for not completed then attach event listner to it and other media's.
-    if (el.tagName === "IMG" && el.complete) {
-      runAnimation(el);
-    } else {
-      el.addEventListener(eventName, () => runAnimation(el), { once: true });
+      // there is an issue with IMG elements that if it is cached in borowser then it means it already completed and load method wont get called so if it is completed then running the animation method and for not completed then attach event listner to it and other media's.
+      if (el.tagName === "IMG" && el.complete) {
+        runAnimation(el);
+      } else {
+        el.addEventListener(eventName, () => runAnimation(el), { once: true });
+      }
+    } catch (error) {
+      console.log(error.message);
     }
   },
   unmounted(el) {
@@ -1541,236 +2370,282 @@ let vLoader = {
 };
 
 async function Lazy_Load_With_animation(el) {
-  if (abort_Controller()) return;
-  console.log(
-    el.previousElementSibling &&
-      el.previousElementSibling.classList.contains("Upload_Loader_active_media")
-  );
-  if (
-    el.previousElementSibling &&
-    el.previousElementSibling.classList.contains("Upload_Loader_active_media")
-  ) {
-    el.previousElementSibling.style.display = "none";
-  }
-  await new Promise((resolve) => setTimeout(resolve, 10));
-  if (abort_Controller()) return;
-  el.style.transition = "transform 0.3s ease";
-  el.style.transform = "scale(1)";
-  /* enabling video overlay */
-  if (el.tagName === "VIDEO")
-    setTimeout(() => (el.nextSibling.style.display = "block"), 300);
-}
-
-async function CloseBtn(event, original = "note_making", location) {
   try {
-    if (original == "note_making") {
-      if (EditMode.value) return;
-      toggle_delete_model.value = false;
-      isAddBtnPressed.value = false;
-      stopRecording();
-      Close_Video_Audio_Preview();
-      Close_Btn_Sound.play();
-      console.log("making form");
-    } else {
-      console.log("UI form");
-      // Revoke all object URLs for media previews
-      if (
-        SendImageForView.value.length > 0 ||
-        SendVideoForView.value.length > 0 ||
-        SendAudioForView.value.length > 0 ||
-        SendDocumentForView.value.length > 0
-      ) {
-        console.log("UI with array");
-        Cancel_Operation.value = true;
-        await remove_elements_from_current_note_view_for_easy_close(event, location);
-        IsRoViewNoteOpen.value = false;
-        Close_Btn_Sound.play();
-        setTimeout(async () => {
-          await Stop_Media();
-          await Cleaning_Link_from_ram();
-        }, 100);
-        console.log("All workers terminated and object URLs purged.");
-      } else {
-        console.log("UI without array");
-        IsRoViewNoteOpen.value = false;
-        Close_Btn_Sound.play();
-      }
-      if (document.body.classList.contains("disable_body_scroll_on_note_full_screen"))
-        document.body.classList.remove("disable_body_scroll_on_note_full_screen");
+    if (abort_Controller()) return;
+    console.log(
+      el.previousElementSibling &&
+        el.previousElementSibling.classList.contains("Upload_Loader_active_media")
+    );
+    if (
+      el.previousElementSibling &&
+      el.previousElementSibling.classList.contains("Upload_Loader_active_media")
+    ) {
+      el.previousElementSibling.style.transition = "opacity 0.2s ease";
+      el.previousElementSibling.style.opacity = 0;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      el.previousElementSibling.style.display = "none";
     }
-    Blur_Background_WhileOpening_Note.value = false;
-    terminateAllWorkers();
-    purgeObjectURLs();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    if (abort_Controller()) return;
+    el.style.transition = "transform 0.3s ease";
+    el.style.transform = "scale(1)";
+    /* enabling video overlay */
+    if (el.tagName === "VIDEO") {
+      el.nextSibling.style.transition = "transform 0.3s ease";
+      el.nextSibling.style.transform = "scale(1)";
+    }
   } catch (error) {
     console.log(error.message);
   }
 }
 
-async function remove_elements_from_current_note_view_for_easy_close(event, location) {
-  console.log("remove_elements_from_current_note_view_for_easy_close");
-  let media_elements =
-    location === "btn"
-      ? event.target.parentElement.parentElement.parentElement
-      : event.target.children[0].children[0].children[3];
+// Helper: Delay function for sequential timing control.
+//const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  media_elements
-    .querySelectorAll(".Upload_Loader_active_media")
-    .forEach((x) => (x.style.opacity = 0));
-  media_elements.querySelectorAll(".video").forEach((x) => (x.style.opacity = 0));
-  media_elements.querySelectorAll(".img").forEach((x) => (x.style.opacity = 0));
-  media_elements.querySelectorAll(".audio").forEach((x) => (x.style.opacity = 0));
-  media_elements.querySelectorAll(".document").forEach((x) => (x.style.opacity = 0));
+// --- Media Cleanup Helpers ---
+
+// Revokes the object URL and resets the element's source.
+function resetMediaElement(el) {
+  try {
+    if (el.tagName === "VIDEO" || el.tagName === "AUDIO") {
+      if (!el.paused) {
+        el.pause();
+        el.currentTime = 0;
+      }
+      if (el.src) {
+        URL.revokeObjectURL(el.src);
+      }
+      el.src = "";
+      el.load();
+    } else if (el.tagName === "IMG") {
+      if (el.src) {
+        URL.revokeObjectURL(el.src);
+      }
+      el.src = "";
+    } else if (el.tagName === "A") {
+      if (el.href) {
+        URL.revokeObjectURL(el.href);
+      }
+      el.href = "";
+    }
+  } catch (error) {
+    console.log("Error in resetMediaElement:", error.message);
+  }
 }
 
-async function Stop_Media() {
-  console.log("Stop_Media");
-  if (media.value) {
-    media.value.forEach((x) => {
-      console.log(x.tagName);
-      if (x.tagName === "VIDEO" || x.tagName === "AUDIO") {
-        if (!x.paused) {
-          x.pause();
-          x.currentTime = 0;
+// Stops and cleans up all media elements stored in a global array.
+async function stopAndCleanMedia(mediaArray) {
+  try {
+    if (mediaArray && mediaArray.value && mediaArray.value.length) {
+      mediaArray.value.forEach((el) => resetMediaElement(el));
+      mediaArray.value.splice(0, mediaArray.value.length);
+      mediaArray.value.length = 0;
+      mediaArray.value = [];
+    }
+  } catch (error) {
+    console.log("Error in stopAndCleanMedia:", error.message);
+  }
+}
+
+// Aggressive DOM media cleanup: scans for lingering media elements.
+function nukeDOMMedia() {
+  try {
+    const selectors = ["video", "audio", "img", "a"];
+    const zombieElements = document.querySelectorAll(selectors.join(","));
+    zombieElements.forEach((el) => resetMediaElement(el));
+    if (window.gc) window.gc(); // Force GC in Chrome if available.
+  } catch (error) {
+    console.log("Error in nukeDOMMedia:", error.message);
+  }
+}
+
+// --- Data Link Cleanup Helpers ---
+
+// Cleans a single array of blob-based links.
+function cleanBlobLinks(arr) {
+  try {
+    arr.forEach((item) => {
+      if (item.Data && typeof item.Data === "string" && item.Data.startsWith("blob")) {
+        URL.revokeObjectURL(item.Data);
+        item.Data = null;
+      }
+    });
+    arr.splice(0, arr.length);
+    arr.length = 0;
+    arr = [];
+  } catch (error) {
+    console.log("Error in cleanBlobLinks:", error.message);
+  }
+}
+
+// Cleans all media link arrays and decompressed media.
+async function aggressiveLinkCleanup() {
+  try {
+    // Clean each media array.
+    [SendImageForView, SendVideoForView, SendAudioForView, SendDocumentForView].forEach(
+      (mediaArray) => {
+        if (mediaArray && mediaArray.value && mediaArray.value.length) {
+          cleanBlobLinks(mediaArray.value);
         }
-        x.src = ""; // Clear source to release buffer
-        x.load(); // Release resources
-      } else if (x.tagName === "IMG") {
-        x.src = "";
-      } else if (x.tagName === "A") {
-        x.href = "";
       }
-      x.remove();
-      setTimeout(() => console.log(x), 1000);
-    });
+    );
+
+    // Clean decompressed media if available.
+    if (Decompressed_Media.value) {
+      if (Decompressed_Media.value.Id) {
+        terminateAllWorkers("view", Decompressed_Media.value.Id);
+      }
+      [
+        Decompressed_Media.value.ImageFile,
+        Decompressed_Media.value.VideoFiles,
+        Decompressed_Media.value.AudioFiles,
+        Decompressed_Media.value.DocumentFiles,
+      ].forEach((arr) => {
+        if (arr && arr.length) {
+          cleanBlobLinks(arr);
+        }
+      });
+      Decompressed_Media.value = null;
+      resetController();
+    }
+  } catch (error) {
+    console.log("Error in aggressiveLinkCleanup:", error.message);
   }
-  console.log("All Media Removed", media);
-  media.value.splice(0, media.value.length);
 }
 
-async function Cleaning_Link_from_ram() {
-  console.log("Cleaning_Link_from_ram");
+// --- UI Cleanup Helper ---
 
-  if (SendImageForView.value.length > 0) {
-    SendImageForView.value.forEach((img) => {
-      if (img.Data.startsWith("blob:")) {
-        URL.revokeObjectURL(img.Data);
-      }
-      img.Data = "";
+// Lowers opacity of media elements inside the provided container.
+function fadeOutMediaElements(container) {
+  try {
+    if (!container) return;
+    const classes = ["Upload_Loader_active_media", "video", "img", "audio", "document"];
+    classes.forEach((className) => {
+      container.querySelectorAll(`.${className}`).forEach((el) => (el.style.opacity = 0));
     });
+  } catch (error) {
+    console.log("Error in fadeOutMediaElements:", error.message);
   }
-
-  if (SendVideoForView.value.length > 0) {
-    SendVideoForView.value.forEach((vid) => {
-      if (vid.Data.startsWith("blob:")) {
-        URL.revokeObjectURL(vid.Data);
-      }
-      vid.Data = "";
-    });
-  }
-
-  if (SendAudioForView.value.length > 0) {
-    SendAudioForView.value.forEach((audio) => {
-      if (audio.Data.startsWith("blob:")) {
-        URL.revokeObjectURL(audio.Data);
-      }
-      audio.Data = "";
-    });
-  }
-
-  if (SendDocumentForView.value.length > 0) {
-    SendDocumentForView.value.forEach((doc) => {
-      if (doc.Data.startsWith("blob:")) {
-        URL.revokeObjectURL(doc.Data);
-      }
-      doc.Data = "";
-    });
-  }
-
-  if (Decompressed_Media.value && Decompressed_Media.value.ImageFile.length > 0) {
-    Decompressed_Media.value.ImageFile.forEach((img) => {
-      if (img.Data.startsWith("blob:")) {
-        URL.revokeObjectURL(img.Data);
-      }
-      img.Data = "";
-    });
-  }
-
-  if (Decompressed_Media.value && Decompressed_Media.value.VideoFiles.length > 0) {
-    Decompressed_Media.value.VideoFiles.forEach((vid) => {
-      if (vid.Data.startsWith("blob:")) {
-        URL.revokeObjectURL(vid.Data);
-      }
-      vid.Data = "";
-    });
-  }
-
-  if (Decompressed_Media.value && Decompressed_Media.value.AudioFiles.length > 0) {
-    Decompressed_Media.value.AudioFiles.forEach((audio) => {
-      if (audio.Data.startsWith("blob:")) {
-        URL.revokeObjectURL(audio.Data);
-      }
-      audio.Data = "";
-    });
-  }
-
-  if (Decompressed_Media.value && Decompressed_Media.value.DocumentFiles.length > 0) {
-    Decompressed_Media.value.DocumentFiles.forEach((doc) => {
-      if (doc.Data.startsWith("blob:")) {
-        URL.revokeObjectURL(doc.Data);
-      }
-      doc.Data = "";
-    });
-  }
-
-  // Clear arrays using splice
-  console.log("Cleaning_Arrays_from_ram");
-  SendImageForView.value.splice(0, SendImageForView.value.length);
-  SendVideoForView.value.splice(0, SendVideoForView.value.length);
-  SendAudioForView.value.splice(0, SendAudioForView.value.length);
-  SendDocumentForView.value.splice(0, SendDocumentForView.value.length);
-
-  if (Decompressed_Media.value) {
-    Decompressed_Media.value.ImageFile.splice(
-      0,
-      Decompressed_Media.value.ImageFile.length
-    );
-    Decompressed_Media.value.VideoFiles.splice(
-      0,
-      Decompressed_Media.value.VideoFiles.length
-    );
-    Decompressed_Media.value.AudioFiles.splice(
-      0,
-      Decompressed_Media.value.AudioFiles.length
-    );
-    Decompressed_Media.value.DocumentFiles.splice(
-      0,
-      Decompressed_Media.value.DocumentFiles.length
-    );
-    Decompressed_Media.value = null;
-  }
-  nukeMediaElements();
-  Cancel_Operation.value = false;
-  resetController();
 }
 
-// Add to Cleaning_Link_from_ram()
-function nukeMediaElements() {
-  const zombieElements = [
-    ...document.querySelectorAll("video:not(.active)"),
-    ...document.querySelectorAll("audio:not(.active)"),
-    ...document.querySelectorAll("img:not(.active)"),
-  ];
+// Removes media elements from the note view depending on the event source.
+async function removeNoteViewElements(event, location) {
+  try {
+    console.log("removeNoteViewElements invoked");
+    let container = null;
+    if (!event) {
+      // Triggered by a back gesture.
+      container = Note_View_UI_Media_Container.value;
+    } else {
+      container =
+        location === "btn"
+          ? event.target.parentElement.parentElement.parentElement
+          : event.target.children[0].children[0].children[3];
+    }
+    fadeOutMediaElements(container);
+  } catch (error) {
+    console.log("Error in removeNoteViewElements:", error.message);
+  }
+}
 
-  zombieElements.forEach((el) => {
-    console.log("nuke method ", el);
-    el.pause();
-    el.src = "";
-    el.srcObject = null;
-    el.removeAttribute("src");
-    el.load();
-  });
-  // Force garbage collection (Chrome only)
-  if (window.gc) window.gc();
+// --- Main Close & Cleanup Function ---
+
+function CloseBtn(event, original = "note_making", location) {
+  try {
+    if (original === "note_making") {
+      // NOTE-MAKING MODE: Minimal UI changes and essential cleanup.
+      if (EditMode.value) return;
+      toggle_delete_model.value = false;
+      isAddBtnPressed.value = false;
+      CurrentIndex.value = null;
+      stopRecording();
+      Close_Video_Audio_Preview();
+      Close_Btn_Sound.play();
+      console.log("Closing note-making form");
+
+      // Run only purgeObjectURLs and hyperClean in the background.
+      (async () => {
+        try {
+          await Promise.all([purgeObjectURLs(), hyperClean(), stop_all_media()]);
+          nukeDOMMedia();
+          console.log("Note-making background cleanup complete.");
+        } catch (bgError) {
+          console.log("Error during note-making background cleanup:", bgError.message);
+        }
+      })();
+    } else {
+      // UI VIEW MODE: Immediate UI updates.
+      console.log("Closing UI form");
+      if (
+        (SendImageForView.value && SendImageForView.value.length) ||
+        (SendVideoForView.value && SendVideoForView.value.length) ||
+        (SendAudioForView.value && SendAudioForView.value.length) ||
+        (SendDocumentForView.value && SendDocumentForView.value.length)
+      ) {
+        console.log("UI form with media detected");
+        Cancel_Operation.value = true;
+        removeNoteViewElements(event, location);
+        IsRoViewNoteOpen.value = false;
+        setTimeout(() => {
+          SendNoteForView_Title.value = null;
+          SendNoteForView_Message.value = null;
+        }, 400);
+        Close_Btn_Sound.play();
+      } else {
+        console.log("UI form without media");
+        IsRoViewNoteOpen.value = false;
+        setTimeout(() => {
+          SendNoteForView_Title.value = null;
+          SendNoteForView_Message.value = null;
+        }, 400);
+        Close_Btn_Sound.play();
+      }
+
+      // Fire off all other cleanup tasks in the background.
+      (async () => {
+        try {
+          await Promise.all([stopAndCleanMedia(media), aggressiveLinkCleanup()]);
+          terminateAllWorkers("view");
+          await Promise.all([purgeObjectURLs(), hyperClean()]);
+          nukeDOMMedia();
+          console.log("UI view background cleanup completed.");
+        } catch (bgError) {
+          console.log("Error during UI view background cleanup:", bgError.message);
+        }
+      })();
+    }
+    Cancel_Operation.value = false;
+    if (document.body.classList.contains("disable_body_scroll_on_note_full_screen"))
+      document.body.classList.remove("disable_body_scroll_on_note_full_screen");
+    Blur_Background_WhileOpening_Note.value = false;
+    console.log("closing blur");
+    All_Storage_DS_Logs();
+  } catch (error) {
+    console.log("Error in CloseBtn:", error.message);
+    // Fallback cleanup.
+    stopRecording();
+    Close_Video_Audio_Preview();
+    purgeObjectURLs();
+    stopAndCleanMedia(media);
+    aggressiveLinkCleanup();
+    hyperClean();
+    terminateAllWorkers("view");
+  }
+}
+
+// --- Additional Final Cleanups ---
+
+function hyperClean() {
+  try {
+    if (window.gc) {
+      // eslint-disable-next-line no-undef
+      gc();
+      // eslint-disable-next-line no-undef
+      gc();
+    }
+  } catch (error) {
+    console.log("Error in hyperClean:", error.message);
+  }
 }
 
 function Toggle_Note_Full_Screen() {
@@ -1779,21 +2654,18 @@ function Toggle_Note_Full_Screen() {
 }
 
 function Remove_Video_Overlay(event) {
-  event.target.classList.add("hide_video_overlay");
-  setTimeout(() => event.target.remove(), 300);
-  event.target.previousElementSibling.play();
+  try {
+    event.target.classList.add("hide_video_overlay");
+    setTimeout(() => event.target.remove(), 300);
+    event.target.previousElementSibling.play();
+  } catch (error) {
+    console.log(error.message);
+  }
 }
-
-db.version(1).stores({
-  notes: "id, note, createdAt, updatedAt",
-  media: "id, blob, createdAt, updatedAt",
-});
-
-const refreshKey = ref(new Date().toISOString());
 
 // Call this function whenever you open a note to force a re-render.
 function updateRefreshKey() {
-  refreshKey.value = new Date().toISOString();
+  refreshKey.value = getSafeUUID();
 }
 
 const boxStyle = computed(() => ({
@@ -1914,25 +2786,45 @@ function storage_capacity_checker() {
     navigator.storage.estimate().then((estimate) => {
       if (!estimate.usage || !estimate.quota) {
         console.log("Unable to retrieve storage estimate.");
-        Show_Critical_Error("Unable to retrieve storage estimate.");
+
+        // Retrieve error count from localStorage (default to 0 if not present)
+        let errorCount = parseInt(
+          localStorage.getItem("Storage_Estimate_Error_Count") || "0",
+          10
+        );
+
+        if (errorCount < 3) {
+          // Increment the error counter and reload the page
+          errorCount++;
+          localStorage.setItem("Storage_Estimate_Error_Count", errorCount);
+          window.location.reload();
+        } else {
+          // On the fourth failure or more, show critical error message
+          Show_Critical_Error(
+            "Unable to retrieve storage estimate, Please Reload The Page!"
+          );
+        }
         return;
       }
 
-      Used_Storage_Capacity.value = (estimate.usage / 1024 ** 3).toFixed(1); // Convert bytes to GB
-      Total_Storage_Capacity.value = (estimate.quota / 1024 ** 3).toFixed(1); // Convert bytes to GB
-      Used_Storage_Capacity_Percentage.value = (
-        (estimate.usage / estimate.quota) *
-        100
-      ).toFixed(2); // Calculate percentage
+      // Reset error count on success
+      localStorage.removeItem("Storage_Estimate_Error_Count");
+
+      const usedGB = (estimate.usage / 1024 ** 3).toFixed(1);
+      const totalGB = (estimate.quota / 1024 ** 3).toFixed(1);
+      const percentage = ((estimate.usage / estimate.quota) * 100).toFixed(2);
+
+      Used_Storage_Capacity.value = usedGB;
+      Total_Storage_Capacity.value = totalGB;
+      Used_Storage_Capacity_Percentage.value = percentage;
 
       if (Used_Storage_Capacity_Element.value) {
-        Used_Storage_Capacity_Element.value.style.width =
-          Used_Storage_Capacity_Percentage.value + "%";
+        Used_Storage_Capacity_Element.value.style.width = percentage + "%";
       }
 
-      console.log(`Used: ${Used_Storage_Capacity.value} GB`);
-      console.log(`Total: ${Total_Storage_Capacity.value} GB`);
-      console.log(`Used Capacity: ${Used_Storage_Capacity_Percentage.value}%`);
+      console.log(`Used: ${usedGB} GB`);
+      console.log(`Total: ${totalGB} GB`);
+      console.log(`Used Capacity: ${percentage}%`);
     });
   } catch (error) {
     console.log(error.message);
@@ -1987,66 +2879,104 @@ function debouncedScroll() {
   }
 }
 
-const workerRegistry = new Set();
+const workerRegistries = {
+  save: new Map(),
+  view: new Map(),
+};
 
-function terminateAllWorkers() {
-  const terminationPromises = [];
+function terminateAllWorkers(type = null, ...ids) {
+  try {
+    // Convert provided IDs into a Set for fast lookup
+    const idSet = new Set(ids);
+    const registryTypes = type ? [type] : Object.keys(workerRegistries);
 
-  workerRegistry.forEach((worker) => {
-    console.log("Terminating worker:", worker);
-    worker.postMessage({ command: "SUICIDE" });
+    console.log(`[WorkerManager] Termination request received.`);
+    console.log(`- Type: ${type || "ALL"}`);
+    console.log(`- Target IDs: ${ids.length > 0 ? [...idSet].join(", ") : "ALL"}`);
 
-    const terminationPromise = new Promise((resolve, reject) => {
-      worker.onmessage = function (e) {
-        if (e.data.status === "SUICIDE_CONFIRMED") {
-          worker.terminate();
-          workerRegistry.delete(worker);
-          console.log("Worker terminated successfully.");
-          resolve();
+    registryTypes.forEach((registryType) => {
+      const registry = workerRegistries[registryType];
+
+      if (!registry) {
+        console.warn(`[WorkerManager] Invalid worker type: ${registryType}. Skipping.`);
+        return;
+      }
+
+      if (idSet.size > 0) {
+        // Terminate only specified workers
+        idSet.forEach((id) => {
+          if (registry.has(id)) {
+            terminateWorker(id, registryType);
+          } else {
+            console.warn(`[WorkerManager] Worker ID ${id} not found in ${registryType}.`);
+          }
+        });
+      } else {
+        // Terminate all workers in this category
+        console.log(
+          `[WorkerManager] Terminating all workers in category: ${registryType}`
+        );
+        for (const [id] of registry) {
+          terminateWorker(id, registryType);
         }
-      };
-
-      worker.onerror = function (error) {
-        console.error("Error terminating worker:", error.message);
-        worker.terminate();
-        workerRegistry.delete(worker);
-        reject(error);
-      };
+      }
     });
 
-    terminationPromises.push(terminationPromise);
-  });
-
-  Promise.all(terminationPromises)
-    .then(() => {
-      workerRegistry.clear();
-      console.log("All workers terminated and registry cleared.");
-    })
-    .catch((error) => {
-      console.error("Error terminating workers:", error.message);
-    });
+    console.log("[WorkerManager] Worker termination process completed.");
+  } catch (error) {
+    console.error("[WorkerManager] Error terminating workers:", error.message);
+  }
 }
 
-// --- Revised CreateWorker() ---
+function terminateWorker(id, registryType) {
+  try {
+    const registry = workerRegistries[registryType];
+    if (!registry || !registry.has(id)) {
+      console.warn(`[WorkerManager] Worker ID ${id} not found in ${registryType}.`);
+      return;
+    }
+
+    const worker = registry.get(id);
+    console.log(`[WorkerManager] Terminating Worker ${id} of type ${registryType}...`);
+
+    worker.postMessage({ command: "SUICIDE" });
+    worker.terminate();
+    registry.delete(id);
+
+    console.log(`[WorkerManager] Worker ${id} successfully terminated.`);
+  } catch (error) {
+    console.error(`[WorkerManager] Error terminating Worker ${id}:`, error.message);
+  }
+}
+
 // This function now returns a promise that resolves when the worker has processed the note.
-function CreateWorker(compressedNote, Is_Note) {
+function Decompresion_Worker(compressedNote, Is_Note) {
   return new Promise((resolve, reject) => {
     let newWorker;
     try {
       resetController();
-      newWorker = new Worker(new URL("./components/worker.js", import.meta.url), {
-        type: "module",
-      });
-      workerRegistry.add(newWorker);
+      newWorker = new Worker(
+        new URL("./components/decompression_worker.js", import.meta.url),
+        {
+          type: "module",
+        }
+      );
+      const workerId = getSafeUUID();
+      workerRegistries.view.set(workerId, newWorker);
+      console.log("Worker created with ID:", workerId);
 
       console.log("Main sending compressed note to worker:", compressedNote);
-      newWorker.postMessage({ compressedNote });
+      newWorker.postMessage({ Id: workerId, IsNote: Is_Note, Data: compressedNote }, [
+        compressedNote.buffer,
+      ]);
+      compressedNote = null;
 
       newWorker.onmessage = function (e) {
         if (e.data.error) {
           console.log("Worker sent error:", e.data.error);
           // Reject the promise if the worker encountered an error.
           newWorker.terminate();
+          terminateAllWorkers("view");
           reject(e.data.error);
           Show_Critical_Error("Notes Decompression Failed! Reload Page or Browser.");
           More_Notes_Are_Coming.value = false;
@@ -2057,12 +2987,13 @@ function CreateWorker(compressedNote, Is_Note) {
           e.data.note.IsLoading = false;
           Is_Note ? data.value.push(e.data.note) : null;
           newWorker.terminate();
-          resolve(e.data.note);
+          resolve({ Id: e.data.Id, Data: e.data.note });
+          e.data.note = null;
         }
-        compressedNote = null;
       };
     } catch (error) {
       newWorker.terminate();
+      terminateAllWorkers("view");
       compressedNote = null;
       reject(error);
       Show_Critical_Error("Notes Decompression Failed! Reload Page or Browser.");
@@ -2077,12 +3008,29 @@ async function SeedNote_On_first_time_app_load() {
     let formattedDate = currentDate.toLocaleDateString();
 
     let Main_Sow_Case_Note = {
-      title: "Demo Note",
-      userWrote:
-        "Hello There, Welcome To Simple Colorful Notes Making Web App. This App Allows You To Create, Edit, View (Tap On Note) And Delete Notes. You Can Also Attach Images, Videos, Audio Files And Documents To Your Notes. The App Supports Various Media Formats And Provides A User-Friendly Interface For Managing Your Notes. Below is a Empty Files Demo. Enjoy Using Notes!",
+      title: updatePreview("## Welcome to Simple Colorful Notes"),
+      userWrote: updatePreview(`
+Explore a feature-rich note-taking experience with intuitive editing, detailed views, and seamless media attachments.
+
+### Key Features
+- **Create & Edit:** Write and modify your notes effortlessly.
+- **View:** Tap on any note for a detailed display.
+- **Delete:** Remove notes when they're no longer needed.
+- **Attachments:** Easily add images, videos, audio files, and documents.
+
+### Demo: Empty File
+<pre class="code-block"><code>Title: [Your Note Title]
+Content: Your note content appears here.
+Attachments: No files attached yet.</code></pre>
+
+> **Tip:** Start by creating your first note and experiment with the media options!
+
+---
+
+Enjoy using your app!`),
       NotesDate: formattedDate,
       isCardGoingDeleted: false,
-      IsLoading: true,
+      IsLoading: false,
       id: 10102,
       Card_Title_Color: "rgb(68 68 68)",
       Card_Para_Color: "rgb(46 46 46)",
@@ -2091,16 +3039,14 @@ async function SeedNote_On_first_time_app_load() {
       TimeStamp: new Date().toISOString(),
     };
 
-    const demoSeeded = localStorage.getItem("demoNoteSeeded");
-
-    // Count the current notes.
+    const demoSeeded = JSON.parse(localStorage.getItem("demoNoteSeeded"));
     const count = await db.notes.count();
-
     // Only seed if there are no notes AND we haven't seeded before.
     if (count === 0 && !demoSeeded) {
       data.value.push(Main_Sow_Case_Note);
-      await Post_Note(Main_Sow_Case_Note, null);
       localStorage.setItem("demoNoteSeeded", "true");
+      /*       await Post_Note(Main_Sow_Case_Note, null); */
+      Compresion_Worker(Main_Sow_Case_Note, "note", "save");
     } else {
       return;
     }
@@ -2143,8 +3089,22 @@ function PersistSort() {
   }
 }
 
+let isFetchingNotes = ref(false);
 async function fetchAllNotes() {
+  let compressed_notes = null;
+  let workerPromises = null;
+  let results = null;
+  let allWorkerIds = null;
+  let query = null;
   try {
+    if (isFetchingNotes.value) {
+      console.log("Notes fetching is already in progress. Please wait.");
+      return; // Exit if a fetch operation is already in progress
+    }
+
+    isFetchingNotes.value = true; // Set the flag to true
+    console.log("Notes fetching in progress...");
+
     // Reset any existing controller state.
     resetController();
 
@@ -2170,18 +3130,17 @@ async function fetchAllNotes() {
     console.log("start index:", startIndex, "limit:", limitCount);
     console.log("excluded ids:", excludedIds);
 
-    let query = db.notes.orderBy("createdAt").reverse();
+    query = await db.notes.orderBy("createdAt").reverse();
 
     if (excludedIds.length > 0) {
       query = query.filter((note) => !excludedIds.includes(note.id));
     }
 
-    let compressed_notes = await query.offset(startIndex).limit(limitCount).toArray();
+    compressed_notes = await query.offset(startIndex).limit(limitCount).toArray();
 
     if (Fetch_Notes_In_Parts.value.Start_From_Note !== 1) {
       More_Notes_Are_Coming.value = true;
     }
-
     console.log("More notes Loading Icon:", More_Notes_Are_Coming.value);
 
     // If no notes are returned, then all notes are loaded.
@@ -2190,18 +3149,25 @@ async function fetchAllNotes() {
         All_Notes_Loaded();
       }
       Turn_Off_Loading_Screen();
+      isFetchingNotes.value = false;
       return;
     }
 
     Fetch_Notes_In_Parts.value.Start_From_Note++;
 
-    let workerPromises = compressed_notes.map((compressed_note) => {
+    workerPromises = compressed_notes.map((compressed_note) => {
       console.log("Sending note to worker:", compressed_note.note);
-      return CreateWorker(compressed_note.note, true);
+      return Decompresion_Worker(compressed_note.note, true);
     });
 
     // Wait until all workers have finished processing and pushed their results to the UI.
-    await Promise.all(workerPromises);
+    results = await Promise.all(workerPromises);
+    allWorkerIds = results.map((result) => {
+      result.Data = null;
+      return result.Id;
+    });
+    console.log("[Decompression] All workers completed. IDs:", allWorkerIds);
+    terminateAllWorkers("view", ...allWorkerIds);
 
     PersistSort();
 
@@ -2210,14 +3176,20 @@ async function fetchAllNotes() {
     if (Fetch_Notes_In_Parts.value.Start_From_Note == 2) {
       Turn_Off_Loading_Screen();
     }
-    query = null;
-    compressed_notes = null;
-    workerPromises = null;
+    console.log("Notes fetched successfully.");
   } catch (error) {
     console.error(error.message);
     ShowErrors(error);
+    terminateAllWorkers("view");
     More_Notes_Are_Coming.value = false;
     Loading.value = false;
+  } finally {
+    isFetchingNotes.value = false; // Reset the flag in the `finally` block
+    query = null;
+    compressed_notes = null;
+    workerPromises = null;
+    results = null;
+    allWorkerIds = null;
   }
 }
 
@@ -2238,15 +3210,32 @@ async function DeleteNote(Delete_id) {
 }
 
 function Reset_Media_Object() {
-  media_object.value.id = null;
-  media_object.value.ImageFile.splice(0, media_object.value.ImageFile.length);
-  media_object.value.VideoFiles.splice(0, media_object.value.VideoFiles.length);
-  media_object.value.AudioFiles.splice(0, media_object.value.AudioFiles.length);
-  media_object.value.DocumentFiles.splice(0, media_object.value.DocumentFiles.length);
-  //  media_object.value = null;
+  try {
+    media_object.value.id = null;
+    const revokeAndClear = (array) => {
+      console.log("reseting media holding arrays done ", array);
+      array.splice(0, array.length); // Clear the array
+      array.length = 0; // Reset the length to 0
+      array = markRaw([]); // Reassign to an empty array
+    };
+    // Revoke URLs and clear each media array
+    revokeAndClear(media_object.value.ImageFile);
+    revokeAndClear(media_object.value.VideoFiles);
+    revokeAndClear(media_object.value.AudioFiles);
+    revokeAndClear(media_object.value.DocumentFiles);
+    console.log("Media object reset and URLs revoked.", media_object.value);
+  } catch (error) {
+    console.log(error.message);
+  }
 }
 
-async function Post_Note(note, media) {
+/* async function Post_Note(note, media) {
+  // Compress the note using the Web Worker
+  let newNote = null;
+  let compressedNote = null;
+  let new_Note_Media = null;
+  let compressedMedia = null;
+
   try {
     resetController();
     console.log("[Frontend] Preparing to compress the note...");
@@ -2259,18 +3248,13 @@ async function Post_Note(note, media) {
       return;
     }
 
-    // Compress the note using the Web Worker
-    let newNote = null;
-    let compressedNote = null;
-    let new_Note_Media = null;
-    let compressedMedia = null;
-
-    compressedNote = await compressNoteInWorker(note);
+    // Destructure the response from the compression worker.
+    compressedNote = await Compresion_Worker(note, "note");
     console.log("[Frontend] Note compressed successfully.", compressedNote);
 
     newNote = {
       id: note.id,
-      note: compressedNote,
+      note: compressedNote.Data,
       createdAt: new Date(),
       updatedAt: null,
     };
@@ -2282,15 +3266,17 @@ async function Post_Note(note, media) {
         media.AudioFiles.length > 0 ||
         media.DocumentFiles.length > 0)
     ) {
-      compressedMedia = await compressNoteInWorker(media);
+      compressedMedia = await Compresion_Worker(media, "media");
+      console.log("[Frontend] Note compressed successfully.", compressedMedia);
 
       new_Note_Media = {
         id: note.id,
-        blob: compressedMedia,
+        blob: compressedMedia.Data,
         createdAt: new Date(),
         updatedAt: null,
       };
     }
+
     await db.transaction("rw", db.notes, db.media, async () => {
       await db.notes.add(newNote);
       if (new_Note_Media) await db.media.add(new_Note_Media);
@@ -2300,25 +3286,36 @@ async function Post_Note(note, media) {
     Newly_Created_Notes_Id_For_Backend_To_Avoid_Send_Them_During_pagination.value.push(
       note.id
     );
+    console.log("All workers terminated and object URLs purged.");
+    storage_capacity_checker();
+  } catch (error) {
+    stop_all_media();
+    terminateAllWorkers("save");
+    console.error("[Frontend] Error in Post_And_Notes:", error.message);
+    // Optionally, display an error message to the user
+    ShowErrors(error);
+  } finally {
+    console.log("cleaning in process...");
     Reset_Media_Object();
+    terminateAllWorkers("save", compressedMedia.Id, compressedNote.Id);
     newNote = null;
     compressedNote = null;
     new_Note_Media = null;
     compressedMedia = null;
     note = null;
     media = null;
-    terminateAllWorkers();
     purgeObjectURLs();
-    console.log("All workers terminated and object URLs purged.");
-    storage_capacity_checker();
-  } catch (error) {
-    console.error("[Frontend] Error in Post_And_Update_Notes:", error.message);
-    // Optionally, display an error message to the user
-    ShowErrors(error);
+    console.log("All workers terminated and object URLs purged. Post method!");
   }
 }
 
 async function Update_Note(note, media) {
+  let compressedNote = null;
+  let updatedNote = null;
+  let compressedMedia = null;
+  let updatedMedia = null;
+  let Is_Media_Exist_for_Note = null;
+
   try {
     resetController();
     console.log("[Frontend] Preparing to compress the note...");
@@ -2330,25 +3327,21 @@ async function Update_Note(note, media) {
       console.error("[Frontend] Invalid note data.");
       return;
     }
-
-    let compressedNote = null;
-    let updatedNote = null;
-    let compressedMedia = null;
-    let updatedMedia = null;
-    const Is_Media_Exist_for_Note = await db.media.get(note.id);
+    Is_Media_Exist_for_Note = await db.media.get(note.id);
 
     // Compress the note using the Web Worker
-    compressedNote = await compressNoteInWorker(note);
-    console.log("[Frontend] Note compressed successfully.", compressedNote);
+    compressedNote = await Compresion_Worker(note, "note");
+    console.log("[Frontend] Note compressed successfully.", compressedNote.Data);
 
     updatedNote = {
-      note: compressedNote,
+      note: compressedNote.Data,
       updatedAt: new Date(),
     };
 
-    compressedMedia = await compressNoteInWorker(media);
+    compressedMedia = await Compresion_Worker(media, "media");
+    console.log("[Frontend] Note compressed successfully.", compressedMedia.Data);
     updatedMedia = {
-      blob: compressedMedia,
+      blob: compressedMedia.Data,
       updatedAt: new Date(),
     };
 
@@ -2363,42 +3356,91 @@ async function Update_Note(note, media) {
         // Create new media entry if none exists
         await db.media.add({
           id: note.id,
-          blob: compressedMedia,
+          blob: compressedMedia.Data,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
       }
-
       note.IsLoading = false;
     });
+  } catch (error) {
+    stop_all_media();
+    terminateAllWorkers("save");
+    console.error("[Frontend] Error in Update_Notes:", error.message);
+    // Optionally, display an error message to the user
+    ShowErrors(error);
+  } finally {
+    console.log("cleaning in process...");
     Reset_Media_Object();
+    terminateAllWorkers("save", compressedNote.Id, compressedMedia.Id);
     compressedNote = null;
     updatedNote = null;
     compressedMedia = null;
     updatedMedia = null;
+    Is_Media_Exist_for_Note = null;
     note = null;
     media = null;
-    terminateAllWorkers();
     purgeObjectURLs();
-    console.log("All workers terminated and object URLs purged.");
+    console.log("All workers terminated and object URLs purged. update method!");
     storage_capacity_checker();
+  }
+} */
+
+function getSafeUUID() {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return (
+      "uuid-" + Date.now().toString(36) + "-" + Math.random().toString(36).substring(2)
+    );
   } catch (error) {
-    console.error("[Frontend] Error in Post_And_Update_Notes:", error.message);
-    // Optionally, display an error message to the user
-    ShowErrors(error);
+    console.log(error.message);
   }
 }
 
-function compressNoteInWorker(note) {
+function Compresion_Worker(data, type, operation) {
   let worker;
+  let mediaClone = null;
+  let transferList = null;
   resetController();
-  console.log("Sending note to worker ", note);
+  console.log("Sending note to worker ", data);
 
   try {
-    worker = new Worker(new URL("./components/compression.worker.js", import.meta.url), {
+    worker = new Worker(new URL("./components/compression_worker.js", import.meta.url), {
       type: "module",
     });
-    workerRegistry.add(worker);
+    const workerId = getSafeUUID();
+    console.log("Worker ID:", workerId);
+    workerRegistries.save.set(workerId, worker);
+    console.log("Worker created with ID:", workerId);
+
+    // Send the note data to the worker for compression
+    if (type == "note") {
+      worker.postMessage({
+        Id: workerId,
+        Type: type,
+        Data: JSON.stringify(data),
+        Operation: operation,
+      });
+    } else if (type === "media") {
+      mediaClone = deepCloneWithoutProxy(data);
+
+      transferList = Object.values(mediaClone)
+        .flat()
+        .map((item) => item.Data)
+        .filter((data) => data instanceof ArrayBuffer);
+
+      worker.postMessage(
+        { Id: workerId, Type: type, Media_Buffer: mediaClone, Operation: operation },
+        transferList
+      );
+      Reset_Media_Object(); // Reset media object after sending
+      data = null; // Clear data reference after sending
+    } else {
+      console.log("No type found from data in compression method main");
+    }
+
     return new Promise((resolve, reject) => {
       worker.onmessage = (event) => {
         if (event.data.error) {
@@ -2408,11 +3450,26 @@ function compressNoteInWorker(note) {
           Show_Critical_Error("Notes Compression Failed! Reload Page or Browser.");
           controller.abort();
         } else {
-          console.log("Worker_finished Product ", event.data.compressedNote);
+          console.log("Worker_finished Product ", event.data);
           worker.terminate(); // Clean up worker after task completion
-          resolve(event.data.compressedNote); // Compression successful
+          resolve({
+            Operation: event.data.Operation,
+            Type: event.data.Type,
+            Status: event.data.status,
+            Id: event.data.Id,
+            id: event.data.id,
+          }); // Compression successful
+          if (event.data.id == 10102) {
+            terminateAllWorkers("save", event.data.Id);
+          }
+          if (event.data.status == "success") {
+            console.log("Compression successful");
+          } else {
+            console.log("Compression failed");
+          }
         }
-        note = null;
+        data = null;
+        event.data.Data = null;
       };
 
       worker.onerror = (error) => {
@@ -2421,18 +3478,47 @@ function compressNoteInWorker(note) {
         Show_Critical_Error("Notes Compression Failed! Reload Page or Browser.");
         worker.terminate();
         controller.abort();
-        note = null;
+        stop_all_media();
+        Reset_Media_Object();
+        terminateAllWorkers("save");
+        purgeObjectURLs();
+        storage_capacity_checker();
+        data = null;
       };
-
-      // Send the note data to the worker for compression
-      worker.postMessage({ noteString: JSON.stringify(note) });
-      note = null;
+      data = null;
     });
   } catch (error) {
     console.log(error.message);
     Show_Critical_Error("Notes Compression Failed! Reload Page or Browser.");
     worker.terminate();
     controller.abort();
+    stop_all_media();
+    Reset_Media_Object();
+    terminateAllWorkers("save");
+    purgeObjectURLs();
+    storage_capacity_checker();
+    console.error("Error in Post_Update_Notes_Compression:", error.message);
+    // Optionally, display an error message to the user
+    ShowErrors(error);
+  } finally {
+    data = null;
+    mediaClone = null;
+    transferList = null;
+  }
+}
+
+function deepCloneWithoutProxy(obj) {
+  try {
+    if (obj instanceof ArrayBuffer) return obj; // Preserve ArrayBuffer
+    if (Array.isArray(obj)) return obj.map(deepCloneWithoutProxy);
+    if (obj !== null && typeof obj === "object") {
+      return Object.fromEntries(
+        Object.entries(obj).map(([key, value]) => [key, deepCloneWithoutProxy(value)])
+      );
+    }
+    return obj;
+  } catch (error) {
+    console.log(error.message);
   }
 }
 
@@ -2535,9 +3621,13 @@ function AudioRec() {
 // Start video recording
 async function startVideoRecording(facingMode) {
   try {
+    Close_Video_Audio_Preview();
     let Camera_Devices = ref([]);
 
-    if (currentStream) stopStream(currentStream);
+    if (currentStream) {
+      stopStream(currentStream);
+      currentStream = null;
+    }
     const constraints = {
       video: { facingMode },
       audio: true,
@@ -2661,12 +3751,16 @@ async function startVideoRecording(facingMode) {
       // eslint-disable-next-line no-unused-vars
       let animationFrameId;
       function drawFrame() {
-        if (ctx) {
-          ctx.save();
-          ctx.scale(-1, 1); // horizontal flip
-          ctx.drawImage(offscreenVideo, -canvas.width, 0, canvas.width, canvas.height);
-          ctx.restore();
-          animationFrameId = requestAnimationFrame(drawFrame);
+        try {
+          if (ctx) {
+            ctx.save();
+            ctx.scale(-1, 1); // horizontal flip
+            ctx.drawImage(offscreenVideo, -canvas.width, 0, canvas.width, canvas.height);
+            ctx.restore();
+            animationFrameId = requestAnimationFrame(drawFrame);
+          }
+        } catch (error) {
+          console.log(error.message);
         }
       }
       drawFrame();
@@ -2722,7 +3816,7 @@ function Toggle_Torch() {
 // Start audio recording
 async function startAudioRecording() {
   if (currentStream) stopStream(currentStream);
-
+  Close_Video_Audio_Preview();
   const constraints = { audio: true };
 
   try {
@@ -2858,85 +3952,79 @@ function stopStream(stream) {
   }
 }
 
-let Video_Audio_Url = ref();
-let arrayBuffer = ref();
-let finalizedBlob = ref();
+let blob = ref(null);
+let Video_Audio_Url = ref(null);
+let Arr_Bfr = null;
 // Save the recording
 async function saveRecording() {
   try {
     let AudioStorageRef = EditMode.value ? Edit_Mode_AudioStorage : AudioStorage;
     let VideoStorageRef = EditMode.value ? Edit_Mode_VideoStorage : VideoStorage;
 
-    let blob = new Blob(recordedChunks.value, {
+    blob.value = new Blob(recordedChunks.value, {
       type: supportedMime.value.replace(/,opus|,vorbis/g, ""),
     });
     recordedChunks.value.splice(0, recordedChunks.value.length); // releasing resouces
-    // Convert the Blob to an ArrayBuffer for finalization
-    arrayBuffer.value = await blob.arrayBuffer();
-    finalizedBlob.value = new Blob([arrayBuffer.value], {
-      type: supportedMime.value.replace(/,opus|,vorbis/g, ""),
-    });
-    console.log("final blob--> ", finalizedBlob.value);
+    recordedChunks.value.length = 0; // Reset the array
+    recordedChunks.value = []; // Reassign to an empty array
 
-    Video_Audio_Url.value = createTrackedObjectURL(finalizedBlob.value);
+    console.log("final blob--> ", blob.value);
+
+    Video_Audio_Url.value = createTrackedObjectURL(blob.value);
     if (!Video_Audio_Url.value) Show_Critical_Error("Url Generation Failed ");
     console.log("url: ", Video_Audio_Url.value);
 
-    let base64 = await blobToBase64(finalizedBlob.value);
-    console.log("base64--> ", base64);
+    Start_Video_Audio_Preview(blob.value, Video_Audio_Url.value);
 
-    Start_Video_Audio_Preview(finalizedBlob.value, Video_Audio_Url.value);
+    Arr_Bfr = await Blob_To_Array_Buffer(blob.value);
 
-    if (finalizedBlob.value.type.includes("audio")) {
+    if (blob.value.type.includes("audio")) {
       AudioStorageRef.value.push({
         name: `AudioRec_${++i}_Attached`,
-        Data: base64,
+        Data: Arr_Bfr,
         Type: "Video",
-        Size: finalizedBlob.value.size,
+        Size: blob.value.size,
         timestamp: Date.now(),
         deletion: false,
       });
-      CurrentlyWritingMessage.value += `\nAudioRec_${i}_Attached`;
+      editor.value.innerHTML += `<br><b>AudioRec_${i}_Attached</b>`;
       console.log("Audio recording saved.");
-      base64 = null; // releasing resouces
-    } else if (finalizedBlob.value.type.includes("video")) {
+    } else if (blob.value.type.includes("video")) {
       VideoStorageRef.value.push({
         name: `VideoRec_${++j}_Attached`,
-        Data: base64,
+        Data: Arr_Bfr,
         Type: "Video",
-        Size: finalizedBlob.value.size,
+        Size: blob.value.size,
         timestamp: Date.now(),
         deletion: false,
       });
-      CurrentlyWritingMessage.value += `\nVideoRec_${j}_Attached`;
+      editor.value.innerHTML += `<br><b>VideoRec_${j}_Attached</b>`;
       console.log("Video recording saved.");
-      base64 = null; // releasing resouces
     } else {
-      console.error("Unknown media type:", finalizedBlob.value.type);
+      console.error("Unknown media type:", blob.value.type);
     }
-    blob = null;
-    arrayBuffer.value = null;
-    finalizedBlob.value = null;
-    base64 = null;
-    //    setTimeout(() => URL.revokeObjectURL(Video_Audio_Url.value), 500); // 🟢 Revoke after 1s
+    blob.value = null;
+    Arr_Bfr = null;
   } catch (error) {
     console.log(error.message);
+    blob.value = null;
+    Arr_Bfr = null;
     URL.revokeObjectURL(Video_Audio_Url.value); // 🟢 Revoke on error
   }
 }
 
-function blobToBase64(blob) {
+function Blob_To_Array_Buffer(blob) {
   try {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result); // reader.result is a data URL
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
+      reader.readAsArrayBuffer(blob);
+      reader.onloadend = () => resolve(reader.result); // reader.result is a arr bfr.
+      reader.onerror = () => reject(new Error("Blob to Array Buffer Conversion Failed"));
     });
   } catch (error) {
     console.log(error.message);
   } finally {
-    blob = null;
+    //blob = null;
   }
 }
 
@@ -2945,6 +4033,7 @@ function Start_Video_Audio_Preview(blob, url) {
     Max_Accumulated_Attachments_Size.value -= blob.size;
 
     if (EditMode.value) {
+      if (!Edit_Mode_Audio_Preview_Element.value) return;
       blob.type.includes("audio")
         ? (Edit_Mode_Toggle_Audio_Preview.value = true)
         : (Edit_Mode_Toggle_Video_Preview.value = true);
@@ -2954,6 +4043,7 @@ function Start_Video_Audio_Preview(blob, url) {
           : (Edit_Mode_Video_Preview_Element.value.src = url);
       }, 5);
     } else {
+      if (!Done_Mode_Audio_Preview_Element.value) return;
       blob.type.includes("audio")
         ? (Done_Mode_Toggle_Audio_Preview.value = true)
         : (Done_Mode_Toggle_Video_Preview.value = true);
@@ -2970,10 +4060,10 @@ function Start_Video_Audio_Preview(blob, url) {
 
 function Close_Video_Audio_Preview() {
   try {
+    console.log("Revoking URL --> ", Video_Audio_Url.value);
     URL.revokeObjectURL(Video_Audio_Url.value);
     Video_Audio_Url.value = null;
-    finalizedBlob.value = null;
-    arrayBuffer.value = null;
+    blob.value = null;
     if (EditMode.value) {
       Edit_Mode_Video_Preview_Element.value.src = null;
       Edit_Mode_Audio_Preview_Element.value.src = null;
@@ -2997,7 +4087,7 @@ function Close_Video_Audio_Preview() {
 function Cleaning(name) {
   try {
     let pattern = new RegExp(name, "g");
-    return CurrentlyWritingMessage.value.replace(pattern, "").trim();
+    return editor.value.innerHTML.replace(pattern, "").trim();
   } catch (error) {
     console.log(error.message);
   }
@@ -3062,7 +4152,7 @@ function delete_media(index, type) {
 
     // Update UI message
     if (name) {
-      CurrentlyWritingMessage.value = Cleaning(name);
+      editor.value.innerHTML = Cleaning(name);
     }
   } catch (error) {
     console.log(`Error deleting ${type}:`, error.message);
@@ -3162,7 +4252,7 @@ function manageMedia(file) {
     if (SupportedText.value.includes(selectedFile.type)) {
       rawfile.readAsText(selectedFile);
     } else {
-      rawfile.readAsDataURL(selectedFile);
+      rawfile.readAsArrayBuffer(selectedFile);
     }
 
     rawfile.onloadend = () => {
@@ -3173,59 +4263,41 @@ function manageMedia(file) {
 
       // If it's a text file, append its content to the writing message
       if (storageType === "text") {
-        CurrentlyWritingMessage.value += fileData;
+        editor.value.innerText += fileData;
       }
 
-      // For each supported type, push an object with file details into the proper storage
-      if (storageType === "image") {
-        storage.value.push({
-          name: fileName,
-          Data: fileData,
-          Type: fileType,
-          Size: fileSize,
-          timestamp: Date.now(),
-          deletion: false,
-        });
-        CurrentlyWritingMessage.value += `\n${fileName}`;
-      } else if (storageType === "video") {
-        storage.value.push({
-          name: fileName,
-          Data: fileData,
-          Type: fileType,
-          Size: fileSize,
-          timestamp: Date.now(),
-          deletion: false,
-        });
-        CurrentlyWritingMessage.value += `\n${fileName}`;
-      } else if (storageType === "audio") {
-        storage.value.push({
-          name: fileName,
-          Data: fileData,
-          Type: fileType,
-          Size: fileSize,
-          timestamp: Date.now(),
-          deletion: false,
-        });
-        CurrentlyWritingMessage.value += `\n${fileName}`;
-      } else if (storageType === "document") {
-        storage.value.push({
-          name: fileName,
-          Data: fileData,
-          Type: fileType,
-          Size: fileSize,
-          timestamp: Date.now(),
-          deletion: false,
-        });
-        CurrentlyWritingMessage.value += `\n${fileName}`;
+      // Usage:
+      if (["image", "video", "audio", "document"].includes(storageType)) {
+        addMediaToStorage(storage, fileName, fileData, fileType, fileSize);
       }
 
       // Deduct the size of the added file from the max attachments size
-      Max_Accumulated_Attachments_Size.value -= fileSize;
 
       // Reset the file input to allow reselecting the same file in the future
-      file.target.value = "";
+      file.target.value = null;
+      Max_Accumulated_Attachments_Size.value -= fileSize;
+      URL.revokeObjectURL(fileData);
       fileData = null;
     };
+  } catch (error) {
+    console.log(error.message);
+  }
+}
+
+function addMediaToStorage(storage, fileName, fileData, fileType, fileSize) {
+  try {
+    storage.value.push({
+      name: fileName,
+      Data: fileData,
+      Type: fileType,
+      Size: fileSize,
+      timestamp: Date.now(),
+      deletion: false,
+    });
+    editor.value.innerHTML += `<br><b>${fileName}</b>`;
+    // reset
+    URL.revokeObjectURL(fileData);
+    fileData = null;
   } catch (error) {
     console.log(error.message);
   }
@@ -3251,8 +4323,16 @@ function AddNoteBtn() {
     SearchBtnLogic();
     Note_heading_element.value.textContent = "Create Note";
     EditMode.value = false;
+    if (temp_for_save_Create_Note_Text_if_available_parallelly.value.length) {
+      CurrentlyWritingTitle.value =
+        temp_for_save_Create_Note_Text_if_available_parallelly.value[0];
+      editor.value.innerText =
+        temp_for_save_Create_Note_Text_if_available_parallelly.value[1];
+    }
     Create_Edit_Btn_Sound.play();
+    /*     updatePreview(); */
     isAddBtnPressed.value = true;
+    document.body.classList.add("disable_body_scroll_on_note_full_screen");
     Blur_Background_WhileOpening_Note.value = true;
   } catch (error) {
     console.log(error.message);
@@ -3268,7 +4348,7 @@ async function Get_Media_from_Db(id) {
       console.log("No media found");
       return null;
     }
-    Get_Decompressed_Media = await CreateWorker(media.blob, false); // Wait for processing
+    Get_Decompressed_Media = await Decompresion_Worker(media.blob, false); // Wait for processing
     console.log("Decompressed_Media ", Get_Decompressed_Media);
     return Get_Decompressed_Media;
   } catch (error) {
@@ -3283,63 +4363,113 @@ async function Get_Media_from_Db(id) {
   }
 }
 
+function generateMediaURLs(mediaArray) {
+  let blob = null;
+  let url = null;
+  try {
+    mediaArray.forEach((media) => {
+      if (media && media.Data instanceof ArrayBuffer) {
+        // Create a Blob from the ArrayBuffer, using the provided Type if available.
+        blob = new Blob([media.Data], {
+          type: media.Type || "application/octet-stream",
+        });
+        // Create a URL from the Blob.
+        url = createTrackedObjectURL(blob);
+        // Nullify the Data property to free the memory.
+        media.Data = null;
+        media.Data = url;
+      }
+    });
+    return mediaArray;
+  } catch (error) {
+    console.log(error.message);
+  } finally {
+    blob = null;
+    url = null; // erase the copy url (points to blob);
+  }
+}
+
+function make_checkbox_readonly(input) {
+  return input.replace(/(<input\s+type="checkbox"[^>]*?)(>)/gi, "$1 data-readonly$2");
+}
+
 let Decompressed_Media = ref(null);
 async function RO_ViewNotePage(index) {
   try {
     updateRefreshKey();
-    SendNoteForView_Title.value = data.value[index].title;
-    SendNoteForView_Message.value = data.value[index].userWrote;
     Blur_Background_WhileOpening_Note.value = true;
     View_Btn_Sound.play();
-    setTimeout(() => (IsRoViewNoteOpen.value = true), 5);
+    IsRoViewNoteOpen.value = true;
+    SendNoteForView_Title.value = updatePreview(data.value[index].title);
+    SendNoteForView_Message.value = updatePreview(
+      make_checkbox_readonly(data.value[index].userWrote)
+    );
+    if (Toggle_Reading_Form_Full_Screen.value)
+      document.body.classList.add("disable_body_scroll_on_note_full_screen");
     Decompressed_Media.value = await Get_Media_from_Db(data.value[index].id);
 
     if (Decompressed_Media.value) {
-      if (Decompressed_Media.value.ImageFile.length > 0)
-        SendImageForView.value = Decompressed_Media.value.ImageFile;
+      if (Decompressed_Media.value.Data.ImageFile.length > 0)
+        SendImageForView.value = generateMediaURLs(
+          Decompressed_Media.value.Data.ImageFile
+        );
 
-      if (Decompressed_Media.value.AudioFiles.length > 0)
-        SendAudioForView.value = Decompressed_Media.value.AudioFiles;
+      if (Decompressed_Media.value.Data.AudioFiles.length > 0)
+        SendAudioForView.value = generateMediaURLs(
+          Decompressed_Media.value.Data.AudioFiles
+        );
 
-      if (Decompressed_Media.value.VideoFiles.length > 0)
-        SendVideoForView.value = Decompressed_Media.value.VideoFiles;
+      if (Decompressed_Media.value.Data.VideoFiles.length > 0)
+        SendVideoForView.value = generateMediaURLs(
+          Decompressed_Media.value.Data.VideoFiles
+        );
 
-      if (Decompressed_Media.value.DocumentFiles.length > 0)
-        SendDocumentForView.value = Decompressed_Media.value.DocumentFiles;
+      if (Decompressed_Media.value.Data.DocumentFiles.length > 0)
+        SendDocumentForView.value = generateMediaURLs(
+          Decompressed_Media.value.Data.DocumentFiles
+        );
     }
-    //inputData.value = "";
   } catch (error) {
+    purgeObjectURLs();
+    nukeDOMMedia();
+    await stopAndCleanMedia(media);
+    await aggressiveLinkCleanup();
+    terminateAllWorkers("view");
     console.log(error.message);
   }
 }
 
 async function EditBtn(index) {
   try {
+    Toggle_MarkDown_Menu.value = false;
     Note_heading_element.value.textContent = "Edit Note";
     disable_color_notes_switcher_btn.value = false;
     /* inputData.value = ""; */
     Note_Createt_Close_btn.value.style.display = "none";
     Create_Edit_Btn_Sound.play();
     EditMode.value = true;
-    isAddBtnPressed.value = true;
     Blur_Background_WhileOpening_Note.value = true;
     /////
     Save_The_Create_Notes_Max_Accu_Attachment_Capacity_While_Switching_To_Edit_Note.value =
       Max_Accumulated_Attachments_Size.value;
-    if (CurrentlyWritingMessage.value !== "" || CurrentlyWritingMessage.value !== "") {
+    if (editor.value.innerText || CurrentlyWritingTitle.value) {
       temp_for_save_Create_Note_Text_if_available_parallelly.value[0] =
         CurrentlyWritingTitle.value;
       temp_for_save_Create_Note_Text_if_available_parallelly.value[1] =
-        CurrentlyWritingMessage.value;
+        editor.value.innerText;
     }
     Max_Accumulated_Attachments_Size.value = data.value[index].Attachment_Used_Size;
 
     console.log("testing--> MAX ", Max_Accumulated_Attachments_Size.value);
     console.log("testing--> Used Size ", data.value[index].Attachment_Used_Size);
     /////
-    CurrentlyWritingMessage.value = data.value[index].userWrote;
+    isEmpty.value = false;
+    editor.value.innerHTML = data.value[index].userWrote;
     CurrentlyWritingTitle.value = data.value[index].title;
+    /*     updatePreview(); */
     CurrentIndex.value = index;
+    isAddBtnPressed.value = true;
+    document.body.classList.toggle("disable_body_scroll_on_note_full_screen");
     /* Useful for edit mode like send all note data to array se delete buttons can acees it then modify & send it back to note*/
     if (EditMode.value) {
       let Pull_Decompressed_Media = await Get_Media_from_Db(data.value[index].id);
@@ -3347,45 +4477,44 @@ async function EditBtn(index) {
 
       // Push items into edit mode arrays
       if (Pull_Decompressed_Media) {
-        Pull_Decompressed_Media.ImageFile.forEach((element) => {
+        Pull_Decompressed_Media.Data.ImageFile.forEach((element) => {
           Edit_Mode_images.value.push(element);
           console.log("db note item ", element);
         });
 
-        Pull_Decompressed_Media.AudioFiles.forEach((element) => {
+        Pull_Decompressed_Media.Data.AudioFiles.forEach((element) => {
           Edit_Mode_AudioStorage.value.push(element);
           console.log("db note item ", element);
         });
 
-        Pull_Decompressed_Media.VideoFiles.forEach((element) => {
+        Pull_Decompressed_Media.Data.VideoFiles.forEach((element) => {
           Edit_Mode_VideoStorage.value.push(element);
           console.log("db note item ", element);
         });
 
-        Pull_Decompressed_Media.DocumentFiles.forEach((element) => {
+        Pull_Decompressed_Media.Data.DocumentFiles.forEach((element) => {
           Edit_Mode_DocumentStorage.value.push(element);
           console.log("db note item ", element);
         });
 
-        // Clear the database-fetched arrays
-        Pull_Decompressed_Media.ImageFile.splice(
-          0,
-          Pull_Decompressed_Media.ImageFile.length
-        );
-        Pull_Decompressed_Media.AudioFiles.splice(
-          0,
-          Pull_Decompressed_Media.AudioFiles.length
-        );
-        Pull_Decompressed_Media.VideoFiles.splice(
-          0,
-          Pull_Decompressed_Media.VideoFiles.length
-        );
-        Pull_Decompressed_Media.DocumentFiles.splice(
-          0,
-          Pull_Decompressed_Media.DocumentFiles.length
-        );
+        if (Pull_Decompressed_Media.Id) {
+          terminateAllWorkers("view", Pull_Decompressed_Media.Id);
+          Pull_Decompressed_Media.Id = null;
+        }
+
+        const mediaArrays = ["ImageFile", "AudioFiles", "VideoFiles", "DocumentFiles"];
+
+        mediaArrays.forEach((key) => {
+          const arr = Pull_Decompressed_Media.Data[key];
+          console.log("edit mode cleaning key--> ", key);
+          console.log("edit mode cleaning arr--> ", arr);
+          if (Array.isArray(arr)) {
+            arr.splice(0, arr.length); // Remove all elements
+            Pull_Decompressed_Media.Data[key].length = 0; // Force clear again
+            Pull_Decompressed_Media.Data[key] = []; // Drop reference for GC
+          }
+        });
       }
-      EditBtn;
 
       console.log("Edit_Mode_images ", Edit_Mode_images.value);
       console.log("Edit_Mode_AudioStorage ", Edit_Mode_AudioStorage.value);
@@ -3414,6 +4543,22 @@ function DeleteCard(index) {
   }
 }
 
+function getHTMLWithCheckedStates(editorEl) {
+  const clone = editorEl.cloneNode(true);
+
+  clone.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+    if (cb.checked) {
+      cb.setAttribute("checked", ""); // mark it checked
+    } else {
+      cb.removeAttribute("checked"); // ensure unchecked ones don’t carry a stale attribute
+    }
+    // (optional) make them read-only in view mode
+    //cb.setAttribute("disabled", "");
+  });
+
+  return clone.innerHTML;
+}
+
 // ........................ This Big function for save data when save or done buton pressed ..........................
 function DoneBtn() {
   try {
@@ -3425,75 +4570,145 @@ function DoneBtn() {
     else {
       Create_Note_Done_Btn();
     }
-    stopRecording();
-    Cleaning_Link_from_ram();
-    purgeObjectURLs();
-    terminateAllWorkers();
+    setTimeout(() => {
+      All_Storage_DS_Logs();
+    }, 30000);
   } catch (error) {
     console.log(error.message);
   }
 }
 
-function Edit_Mode_Done_Btn() {
+async function stop_all_media() {
   try {
-    data.value[CurrentIndex.value].userWrote = CurrentlyWritingMessage.value;
-    data.value[CurrentIndex.value].title = CurrentlyWritingTitle.value;
-    ////
-    let currentDate = new Date();
-    let formattedDate = currentDate.toLocaleDateString();
-    data.value[CurrentIndex.value].NotesDate = formattedDate;
-    ////;
-    Close_Video_Audio_Preview();
-    //////////
-    data.value[CurrentIndex.value].IsLoading = true;
-    /////////////
-    let edit_note_media_object = Working_Along_Side_With_Done_Btn(
-      data.value[CurrentIndex.value].id
-    );
-
-    isAddBtnPressed.value = false;
-    Blur_Background_WhileOpening_Note.value = false;
-    CurrentlyWritingTitle.value =
-      temp_for_save_Create_Note_Text_if_available_parallelly.value[0];
-    CurrentlyWritingMessage.value =
-      temp_for_save_Create_Note_Text_if_available_parallelly.value[1];
-
-    data.value[CurrentIndex.value].Attachment_Used_Size =
-      Max_Accumulated_Attachments_Size.value;
-
-    Max_Accumulated_Attachments_Size.value =
-      Save_The_Create_Notes_Max_Accu_Attachment_Capacity_While_Switching_To_Edit_Note.value;
-    Note_Createt_Close_btn.value.style.display = "block";
-    EditMode.value = false;
-    disable_color_notes_switcher_btn.value = true;
-    //Overwriting local storage with new data.
-    setTimeout(async () => {
-      await Update_Note(data.value[CurrentIndex.value], edit_note_media_object);
-      edit_note_media_object = null;
-    }, 10);
-    /* Pressing Add Note button will automatciall set EditMode to false when pressed until edit mode is oned */
+    Toggle_MarkDown_Menu.value = false;
+    if (document.body.classList.contains("disable_body_scroll_on_note_full_screen"))
+      document.body.classList.remove("disable_body_scroll_on_note_full_screen");
+    stopRecording();
+    nukeDOMMedia();
+    await aggressiveLinkCleanup();
+    purgeObjectURLs();
+    hyperClean();
   } catch (error) {
     console.log(error.message);
+  }
+}
+
+async function Edit_Mode_Done_Btn() {
+  try {
+    if (!EditMode.value || CurrentIndex.value === undefined) {
+      console.error("Edit mode is not active or currentIndex is undefined.");
+      Show_Create_Edit_Model_Warning(
+        "Cannot save: Edit mode not properly initialized.",
+        1500
+      );
+      isAddBtnPressed.value = false; // Close the modal
+      Blur_Background_WhileOpening_Note.value = false;
+      await stop_all_media();
+      Reset_Media_Object();
+      purgeObjectURLs();
+      storage_capacity_checker();
+      return;
+    }
+    if (
+      editor.value.innerText.trim() !== "" &&
+      CurrentlyWritingTitle.value.trim() !== ""
+    ) {
+      // Capture the index locally
+      const currentIndex = CurrentIndex.value;
+
+      data.value[currentIndex].userWrote = getHTMLWithCheckedStates(editor.value);
+      data.value[currentIndex].title = updatePreview(CurrentlyWritingTitle.value);
+      editor.value.innerHTML = null;
+      CurrentlyWritingTitle.value = null;
+      let currentDate = new Date();
+      let formattedDate = currentDate.toLocaleDateString();
+      data.value[currentIndex].NotesDate = formattedDate;
+      Close_Video_Audio_Preview();
+      data.value[currentIndex].IsLoading = true;
+
+      let edit_note_media_object = Working_Along_Side_With_Done_Btn(
+        data.value[currentIndex].id
+      );
+
+      isAddBtnPressed.value = false;
+      Blur_Background_WhileOpening_Note.value = false;
+      data.value[currentIndex].Attachment_Used_Size =
+        Max_Accumulated_Attachments_Size.value;
+      Max_Accumulated_Attachments_Size.value =
+        Save_The_Create_Notes_Max_Accu_Attachment_Capacity_While_Switching_To_Edit_Note.value;
+      Note_Createt_Close_btn.value.style.display = "block";
+      EditMode.value = false;
+      disable_color_notes_switcher_btn.value = true;
+
+      let response_note = null;
+      let response_media = null;
+      console.log("1. Note Object ", data.value[currentIndex]);
+      console.log("2. sending note id to db", data.value[currentIndex].id);
+      isEmpty.value = true;
+      response_note = await Compresion_Worker(data.value[currentIndex], "note", "update");
+      console.log("17. created note_media_object", edit_note_media_object);
+      console.log("18. sending media to db?");
+      if (
+        edit_note_media_object &&
+        (edit_note_media_object.ImageFile.length > 0 ||
+          edit_note_media_object.VideoFiles.length > 0 ||
+          edit_note_media_object.AudioFiles.length > 0 ||
+          edit_note_media_object.DocumentFiles.length > 0)
+      ) {
+        console.log("18. sending media id to db", data.value[currentIndex].id);
+        response_media = await Compresion_Worker(
+          edit_note_media_object,
+          "media",
+          "update"
+        );
+        console.log("19. response_media ", response_media);
+        console.log("20. response_note ", response_note);
+      }
+      console.log("21. finishing loading");
+      data.value[currentIndex].IsLoading = false;
+      edit_note_media_object = null;
+      console.log("22. going to terminate after loading finished");
+      terminateAllWorkers("save", response_note?.Id, response_media?.Id);
+      console.log("23. terminated");
+      await stop_all_media();
+      console.log("24. stopped all media");
+      Reset_Media_Object();
+      console.log("25. reset media object");
+      purgeObjectURLs();
+      console.log("26. purged object urls");
+      storage_capacity_checker();
+      console.log("27. storage capacity checked");
+    } else {
+      Show_Create_Edit_Model_Warning("Please Fill Both Boxes.", 1500);
+      return;
+    }
+  } catch (error) {
+    console.log(error.message);
+    await stop_all_media();
+    Reset_Media_Object();
+    terminateAllWorkers("save");
+    purgeObjectURLs();
+    storage_capacity_checker();
   }
 }
 
 let note_And_media_id = null;
-function Create_Note_Done_Btn() {
+async function Create_Note_Done_Btn() {
   try {
     if (
-      CurrentlyWritingMessage.value.trim() !== "" &&
+      editor.value.innerText.trim() !== "" &&
       CurrentlyWritingTitle.value.trim() !== ""
     ) {
       let currentDate = new Date();
       let formattedDate = currentDate.toLocaleDateString();
       let gettingColor = generateRandomColor();
       let result = gettingColor.slice(0, -5) + "1.0)";
-      note_And_media_id = Math.floor(Math.random() * 10000);
+      note_And_media_id = Date.now() + Math.floor(Math.random() * 1000000); // Unique ID
 
       //.................................. Object For Array To Make New Cards .................................
       Note_Object = {
-        title: CurrentlyWritingTitle.value,
-        userWrote: CurrentlyWritingMessage.value,
+        title: updatePreview(CurrentlyWritingTitle.value),
+        userWrote: updatePreview(getHTMLWithCheckedStates(editor.value)),
         NotesDate: formattedDate,
         isCardGoingDeleted: false,
         IsLoading: true,
@@ -3504,51 +4719,101 @@ function Create_Note_Done_Btn() {
         Attachment_Used_Size: Max_Accumulated_Attachments_Size.value,
         TimeStamp: new Date().toISOString(),
       };
+      editor.value.innerHTML = null;
+      CurrentlyWritingTitle.value = null;
 
       let create_note_media_object = Working_Along_Side_With_Done_Btn();
 
       //.............................................Here Pushing object To Array ................................
-      CurrentlyWritingMessage.value = "";
-      CurrentlyWritingTitle.value = "";
       Close_Video_Audio_Preview();
       isAddBtnPressed.value = false;
       Blur_Background_WhileOpening_Note.value = false;
       Max_Accumulated_Attachments_Size.value =
         Max_Accumulated_Attachments_Size_Buffer.value;
+      temp_for_save_Create_Note_Text_if_available_parallelly.value.splice(
+        0,
+        temp_for_save_Create_Note_Text_if_available_parallelly.value.length
+      );
       ///
-      setTimeout(async () => {
-        await Post_Note(Note_Object, create_note_media_object);
-        create_note_media_object = null;
-      }, 30);
+      let response_note = null;
+      let response_media = null;
+      console.log("1. Note Object ", Note_Object);
+      console.log("2. sending note id to db", note_And_media_id);
 
-      //Overwriting local storage with new data.
+      response_note = await Compresion_Worker(Note_Object, "note", "save");
+      if (
+        create_note_media_object &&
+        (create_note_media_object.ImageFile.length > 0 ||
+          create_note_media_object.VideoFiles.length > 0 ||
+          create_note_media_object.AudioFiles.length > 0 ||
+          create_note_media_object.DocumentFiles.length > 0)
+      ) {
+        console.log("17. create_note_media_object", create_note_media_object);
+        console.log("18. sending media id to db", note_And_media_id);
+
+        response_media = await Compresion_Worker(
+          create_note_media_object,
+          "media",
+          "save"
+        );
+      }
+      console.log("19. response_note ", response_note);
+      console.log("20. response_media ", response_media);
+      console.log("21. finishing loading");
+      data.value[data.value.findIndex((n) => n.id == response_note.id)].IsLoading = false;
+      create_note_media_object = null;
+      Newly_Created_Notes_Id_For_Backend_To_Avoid_Send_Them_During_pagination.value.push(
+        note_And_media_id
+      );
+      console.log("22. going to terminate after loading finished");
+      terminateAllWorkers("save", response_note?.Id, response_media?.Id);
+      console.log("23. terminated");
+      await stop_all_media();
+      console.log("24. stopped all media");
+      Reset_Media_Object();
+      console.log("25. reset media object");
+      purgeObjectURLs();
+      console.log("26. purged object urls");
+      storage_capacity_checker();
+      console.log("27. storage capacity checked");
+      /*       stop_all_media(); */
     }
     //..............................Error If It Found Inputs Fields Are Empty .....................................
     else {
       Show_Create_Edit_Model_Warning("Please Fill Both Boxes.", 1500);
+      return;
     }
   } catch (error) {
+    console.log("Error in Create_Note_Done_Btn: ", error.message);
     console.log(error.message);
+    await stop_all_media();
+    Reset_Media_Object();
+    terminateAllWorkers("save");
+    purgeObjectURLs();
+    storage_capacity_checker();
   }
 }
 
 let media_object = ref({
   id: null,
-  ImageFile: [],
-  AudioFiles: [],
-  VideoFiles: [],
-  DocumentFiles: [],
+  ImageFile: markRaw([]), // Array itself is non-reactive
+  AudioFiles: markRaw([]),
+  VideoFiles: markRaw([]),
+  DocumentFiles: markRaw([]),
 });
 
+/////////
 function Working_Along_Side_With_Done_Btn(edit_mode_note_id) {
   try {
     const updateAndClearStorage = (source, target) => {
       source.forEach((item) => {
         console.log("Loop items ", item);
-        target.push(item);
+        target.push(markRaw(item));
         console.log("Target ", target);
       });
       source.splice(0, source.length); // Clear the source after transfer
+      source.length = 0; // Force clear again
+      source = []; // Drop reference for GC
       console.log("Cleaning Arrays ", source);
     };
 
@@ -3596,29 +4861,29 @@ function Working_Along_Side_With_Done_Btn(edit_mode_note_id) {
 }
 
 //.................................. A Function To Move Cursor, Enter to Save ...........................................
-onMounted(() => {
+function Handle_Keyboard_Events() {
   try {
     Note_Making_UI_Element.value.addEventListener("keyup", (event) => {
       if (event.key === "Escape") {
-        CloseBtn();
+        CloseBtn(null, "note_making", null);
       }
     });
 
     note_view_ui_element.value.addEventListener("keyup", (event) => {
       if (event.key === "Escape") {
-        CloseBtn();
+        CloseBtn(null, null, "ovl");
       }
     });
 
     focusOnInput.value.addEventListener("keyup", (event) => {
       if (event.key === "Enter") {
-        TextAreaElement.value.focus(); // Shift focus to the note input box
+        editor.value.focus(); // Shift focus to the note input box
       } else if (event.key == "Enter" && event.shiftKey) {
         DoneBtn();
       }
     });
 
-    TextAreaElement.value.addEventListener("keyup", (event) => {
+    editor.value.addEventListener("keyup", (event) => {
       if (event.key == "Enter" && event.shiftKey) {
         DoneBtn();
       }
@@ -3626,28 +4891,9 @@ onMounted(() => {
   } catch (error) {
     console.log(error.message);
   }
-});
-
-watch(isAddBtnPressed, (newval) => {
-  try {
-    if (newval && focusOnInput.value)
-      setTimeout(() => {
-        focusOnInput.value.focus();
-      }, 350);
-  } catch (error) {
-    console.log(error.message);
-  }
-});
+}
 
 let Making_Debounce = debounce(SearchBtnLogic, 200);
-
-function Debounce_Search() {
-  try {
-    Making_Debounce();
-  } catch (error) {
-    console.log(error.message);
-  }
-}
 
 function SearchBtnLogic() {
   try {
@@ -3696,13 +4942,14 @@ function SearchBtnLogic() {
 
 function AdjustCameraScreenSize() {
   try {
-    videoPreview.value.style.width = TextAreaElement.value.offsetWidth + "px"; // Append "px"
-    videoPreview.value.style.height = TextAreaElement.value.offsetHeight + "px"; // Append "px"
-    console.log(videoPreview.value.offsetWidth, "\n", TextAreaElement.value.offsetHeight);
+    videoPreview.value.style.width = editor.value.offsetWidth + "px"; // Append "px"
+    videoPreview.value.style.height = editor.value.offsetHeight + "px"; // Append "px"
   } catch (error) {
     console.log(error.message);
   }
 }
+
+AdjustCameraScreenSize();
 
 function Scroll_Control(event) {
   try {
@@ -3717,23 +4964,6 @@ function Scroll_Control(event) {
     console.log(error.message);
   }
 }
-
-onMounted(() => {
-  document.addEventListener("keydown", Scroll_Control);
-  document.removeEventListener("keyup", Scroll_Control);
-  window.addEventListener("resize", AdjustCameraScreenSize);
-  ////
-  Is_Sticky_Colorful_Card.value = JSON.parse(
-    localStorage.getItem("Colorful_Notes") || false
-  ); // here we use json parse due to local storage return string and in case of boolean its bad.
-  sort_order.value = localStorage.getItem("sort_order") || "desc";
-  Alignment_index.value = localStorage.getItem("align_text") || 1;
-  SeedNote_On_first_time_app_load();
-  fetchAllNotes();
-  change_text_alignment();
-  storage_capacity_checker();
-  window.addEventListener("scroll", debouncedScroll);
-});
 
 // Computed properties using your structure
 const Video_Array = computed(() => {
@@ -3762,50 +4992,157 @@ const Document_Array = computed(() => {
   return baseArr.filter((item) => item.name.trim() !== "");
 });
 
-/* watch(
-  Video_Array,
-  (newVal, oldVal) => {
-    console.log("Video_Array changed", { oldVal, newVal });
-    // Do any extra handling here if needed (e.g. cleanup if items were removed)
-  },
-  { deep: true }
-);
+const urlRegistry = new Map();
 
-watch(
-  Audio_Array,
-  (newVal, oldVal) => {
-    console.log("Audio_Array changed", { oldVal, newVal });
-  },
-  { deep: true }
-);
+function createTrackedObjectURL(blob) {
+  let url = null;
+  try {
+    url = URL.createObjectURL(blob);
+    console.log("url created by main ", url);
+    urlRegistry.set(url, {
+      blob,
+      created: Date.now(),
+      stack: new Error().stack,
+    });
+    return url;
+  } catch (error) {
+    console.log(error.message);
+  } finally {
+    blob = null;
+    url = null;
+  }
+}
 
-watch(
-  Image_Array,
-  (newVal, oldVal) => {
-    console.log("Image_Array changed", { oldVal, newVal });
-  },
-  { deep: true }
-);
+function purgeObjectURLs() {
+  try {
+    urlRegistry.forEach((meta, url) => {
+      URL.revokeObjectURL(url);
+      meta.blob = null;
+      console.log(`Object blob and URL revoked: ${url}`);
+    });
+    urlRegistry.clear();
+    console.log("All object URLs purged.");
+  } catch (error) {
+    console.error("Failed to purge object URLs:", error.message);
+  }
+}
 
-watch(
-  Document_Array,
-  (newVal, oldVal) => {
-    console.log("Document_Array changed", { oldVal, newVal });
-  },
-  { deep: true }
-); */
+// Add memory guard to critical functions
+async function memoryGuard() {
+  try {
+    if (Used_Storage_Capacity_Percentage.value > 90) {
+      Show_Critical_Error(`Warning! Storage Will Auto Erase Above 95% Usage.`);
+    }
+    if (Used_Storage_Capacity_Percentage.value > 95) {
+      Show_Critical_Error(`Warning! 95% Limit Reached, Erasing Storage Started`);
+      terminateAllWorkers();
+      purgeObjectURLs();
+      nukeDOMMedia();
+      await aggressiveLinkCleanup();
+      db.delete();
+      location.reload(); // Nuclear option
+    }
+  } catch (error) {
+    console.log(error.message);
+  }
+}
+// Run periodically
+setInterval(memoryGuard, 300000);
 
-onUnmounted(() => {
+function Manage_Model_Using_Ui_gesture() {
+  try {
+    console.log("fired...");
+    if (isAddBtnPressed.value) {
+      CloseBtn(null, "note_making", null);
+      return true;
+    } else if (IsRoViewNoteOpen.value) {
+      CloseBtn(null, null, null);
+      return true;
+    } else if (inputData.value.length > 0) {
+      reset_searchbar();
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    console.log(error.message);
+  }
+}
+
+function handlePopState() {
+  try {
+    // If any UI element is open, close it and push state back to prevent route change
+    if (Manage_Model_Using_Ui_gesture()) {
+      console.log("fire in");
+      history.pushState(null, document.title, window.location.href);
+    } else {
+      if (window.location.pathname === "/") {
+        console.log("default");
+        /* empty */
+      }
+    }
+  } catch (error) {
+    console.log(error.message);
+  }
+}
+
+onBeforeUnmount(() => {
+  window.removeEventListener("popstate", handlePopState);
+});
+
+onMounted(async () => {
+  console.log("App mounted");
+  terminateAllWorkers("save");
+  terminateAllWorkers("view");
+  purgeObjectURLs();
+  nukeDOMMedia();
   stopRecording();
-  Cleaning_Link_from_ram();
+  await aggressiveLinkCleanup();
+  history.pushState(null, document.title, window.location.href);
+  window.addEventListener("popstate", handlePopState);
+  Handle_Keyboard_Events();
+  document.addEventListener("keydown", Scroll_Control);
+  document.removeEventListener("keyup", Scroll_Control);
+  window.addEventListener("resize", AdjustCameraScreenSize);
+  ////
+  Is_Sticky_Colorful_Card.value = JSON.parse(
+    localStorage.getItem("Colorful_Notes") || false
+  ); // here we use json parse due to local storage return string and in case of boolean its bad.
+  sort_order.value = localStorage.getItem("sort_order") || "desc";
+  Alignment_index.value = localStorage.getItem("align_text") || 1;
+  SeedNote_On_first_time_app_load();
+  fetchAllNotes();
+  storage_capacity_checker();
+  change_text_alignment();
+  /* updatePreview(); */
+  window.addEventListener("scroll", debouncedScroll);
+});
+
+onUnmounted(async () => {
+  All_Storage_DS_Logs();
+  db.tables.forEach((table) => {
+    if (typeof table.close() === "function") table.close();
+  });
+  Dexie.delete("MyNotesDB"); // Force close
+  data.value = [];
+  media_object.value = null;
+  Decompressed_Media.value = null;
+  stopRecording();
+  nukeDOMMedia();
+  await aggressiveLinkCleanup();
   db.close();
   stopStream(currentStream);
+  window.removeEventListener("popstate", handlePopState);
   document.removeEventListener("keydown", Scroll_Control);
-  window.removeEventListener("resize", AdjustCameraScreenSize);
+  document.removeEventListener("Keyup", Scroll_Control);
+  clearTimeout(debounceTimeout); // Add timeout cleanup
   window.removeEventListener("scroll", debouncedScroll); // 🟢 Add this
   window.removeEventListener("resize", AdjustCameraScreenSize);
   terminateAllWorkers();
   purgeObjectURLs();
+  terminateAllWorkers("save");
+  terminateAllWorkers("view");
+  controller.abort();
   console.log("All workers terminated and object URLs purged.");
 });
 
@@ -3829,38 +5166,78 @@ onUnmounted(() => {
   }, 0);
 });
 
-const urlRegistry = new Map();
-
-function createTrackedObjectURL(blob) {
-  let url = null;
+watch(isAddBtnPressed, (newval) => {
   try {
-    url = URL.createObjectURL(blob);
-    urlRegistry.set(url, {
-      blob,
-      created: Date.now(),
-      stack: new Error().stack,
-    });
-    return url;
+    if (newval && focusOnInput.value)
+      setTimeout(() => {
+        focusOnInput.value.focus();
+      }, 350);
   } catch (error) {
     console.log(error.message);
-  } finally {
-    blob = null;
-    url = null;
   }
-}
+});
 
-function purgeObjectURLs() {
-  try {
-    urlRegistry.forEach((meta, url) => {
-      URL.revokeObjectURL(url);
-      meta.blob = null;
-      console.log(`Object URL revoked: ${url}`);
-    });
-    urlRegistry.clear();
-    console.log("All object URLs purged.");
-  } catch (error) {
-    console.error("Failed to purge object URLs:", error.message);
-  }
+function All_Storage_DS_Logs() {
+  console.groupCollapsed("=== Storage & Workers Dump ===");
+
+  // 1) Generic array logs
+  [
+    ["recordedChunks", recordedChunks.value],
+    ["images", images.value],
+    ["AudioStorage", AudioStorage.value],
+    ["VideoStorage", VideoStorage.value],
+    ["DocumentStorage", DocumentStorage.value],
+  ].forEach(([name, arr]) => console.log(`${name} [${arr.length}]`, arr));
+
+  // 2) Edit‑mode arrays
+  console.group("Edit‑Mode Storages");
+  [
+    ["images", Edit_Mode_images.value],
+    ["AudioStorage", Edit_Mode_AudioStorage.value],
+    ["VideoStorage", Edit_Mode_VideoStorage.value],
+    ["DocumentStorage", Edit_Mode_DocumentStorage.value],
+  ].forEach(([name, arr]) => console.log(`${name} [${arr.length}]`, arr));
+  console.groupEnd();
+
+  // 3) View arrays
+  console.group("View Storages");
+  [
+    ["SendImageForView", SendImageForView.value],
+    ["SendAudioForView", SendAudioForView.value],
+    ["SendVideoForView", SendVideoForView.value],
+    ["SendDocumentForView", SendDocumentForView.value],
+  ].forEach(([name, arr]) => console.log(`${name} [${(arr || []).length}]`, arr));
+  console.groupEnd();
+
+  // 4) media_object tables
+  console.group("media_object");
+  console.table(media_object.value.ImageFile);
+  console.table(media_object.value.AudioFiles);
+  console.table(media_object.value.VideoFiles);
+  console.table(media_object.value.DocumentFiles);
+  console.groupEnd();
+
+  // 5) URL registry
+  console.group("urlRegistry");
+  urlRegistry.forEach((meta, url) => console.log(url, "→", meta));
+  console.groupEnd();
+
+  // 6) Worker registries
+  console.group("workerRegistries.save");
+  workerRegistries.save.forEach((worker, id) => console.log(id, worker));
+  console.groupEnd();
+  console.group("workerRegistries.view");
+  workerRegistries.view.forEach((worker, id) => console.log(id, worker));
+  console.groupEnd();
+
+  // 7) Your new variables
+  console.group("Additional Variables");
+  console.log("blob:", blob.value);
+  console.log("Video_Audio_Url:", Video_Audio_Url.value);
+  console.log("Arr_Bfr:", Arr_Bfr);
+  console.groupEnd();
+
+  console.groupEnd(); // end root
 }
 
 // User Data.

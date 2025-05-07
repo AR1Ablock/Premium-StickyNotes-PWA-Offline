@@ -49,6 +49,15 @@ export default defineConfig({
       }
     }),
   ],
+  build: {
+    sourcemap: true, // Enable source maps but remove in production builds
+  },
+  worker: {
+    format: "es", // Ensure ES module format for workers
+  },
+  output: {
+    sourcemap: true
+  },
   server: {
     // host: true,
     hmr : true,

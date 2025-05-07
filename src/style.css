@@ -10,6 +10,10 @@ body {
   overflow-x: hidden;
 }
 
+*{
+  scroll-behavior: smooth !important;
+}
+
 ::-webkit-scrollbar {
   width: 0.5vmin;
 }
@@ -43,6 +47,21 @@ body {
   cursor: pointer;
   font-weight: bold;
   transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.disable_Card_While_Saving{
+  pointer-events: none !important;
+  opacity: 0.5 !important;
+  transition: all .2s ease !important;
+  transition-timing-function: ease !important;
+  cursor: not-allowed !important;
+}
+
+::placeholder{
+  user-select: none;
 }
 
 .btn:hover {
@@ -74,6 +93,10 @@ body {
   margin: 0 0 1rem 0;
 }
 
+.model_h3{
+  user-select: none;
+}
+
 .create_edit_model_container {
   position: absolute;
   height: 100%;
@@ -88,6 +111,10 @@ body {
   transform: scale(0);
   opacity: 0;
   transition: transform .6s ease, opacity 0.3s ease;
+}
+
+.close_Mark_Down_Menu:hover{
+background-color: #585858 !important;
 }
 
 .dialog {
@@ -266,6 +293,7 @@ body {
 .document a:hover {
   background-color: #1C1C1C;
   transition: all ease .3s;
+  text-decoration: none;
 }
 
 @media (max-width: 1100px) {
@@ -399,6 +427,8 @@ body {
   .card_con .cards:hover {
     transform: scale(1.05);
     transition: all .2s ease;
+    outline: none !important;
+    filter: none !important;
     box-shadow: none !important;
   }
 
@@ -437,7 +467,6 @@ body {
     font-size: 3.5vmin !important;
   }
 
-
   .card_con .Card_Title {
     font-size: 3.2vmin !important;
   }
@@ -449,7 +478,6 @@ body {
   .Audio_Preview_Container {
     width: 70%;
   }
-
 
   .notepag_con {
     min-height: 5vh !important;
@@ -508,18 +536,31 @@ body {
 .model_note {
   padding: .5vmin 1vmin;
   border-radius: 1vmin;
+  line-height: clamp(2rem, 5vw, 3rem);
+  text-align: left;
   font-size: 2.6vmin;
+  overflow: scroll;
   height: 40vh;
   width: 80%;
   outline: none;
   background: #2F2F2F;
   color: #fff;
   border: 1px solid #555;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-.model_note::placeholder {
+.model_note p{
+  margin: 0 !important;
+}
+
+.model_note.empty::before {/* Class for doing fake place holder */
+  content: attr(data-placeholder);
+  font-size: clamp(.7rem, 1.2vw, 2.2rem);
   color: rgb(163, 138, 0);
-  font-size: 2.4vmin;
+  pointer-events: none;
+  position: absolute;
+  display: block;
 }
 
 .model_note:focus {
@@ -538,6 +579,43 @@ body {
   object-fit: fill;
 }
 
+.preview_textarea{
+/*   position: absolute; */
+margin: 1rem 0 0 0;
+  text-align: justify;
+  width: max-content;
+  height: max-content;
+  overflow: scroll;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  background: #222;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 1vmin;
+  padding: .5vmin 1vmin;
+  font-size: 2.6vmin;
+  outline: none;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE/Edge */
+}
+
+/* Hide scrollbar for Webkit browsers (Chrome, Safari) */
+.preview_textarea::-webkit-scrollbar {
+  width: 0px;
+  /* Hide scrollbar */
+  height: 0px;
+}
+
+.preview_textarea *{
+  margin: 0;
+}
+
+/* .textarea_preview_showing{
+  fill: black;
+} */
 
 .notepag_con::-webkit-scrollbar,
 .model_note::-webkit-scrollbar {
@@ -579,7 +657,7 @@ body {
 }
 
 .Notepage_View_Full_Screen_And_Change_Color_Container {
-  width: 100.3%;
+  width: 100.8%;
   transform: translateX(.32vmin);
   border-bottom: solid 2px #FFD700;
   background-color: #2A2A2A;
@@ -593,6 +671,7 @@ body {
 }
 
 .Notes_View_UI_Heading {
+  user-select: none;
   margin: 0 0 0 clamp(.5rem, 2vw, 1.5rem);
   font-size: clamp(1rem, 3vw, 1.8rem);
   font-weight: bolder;
@@ -676,7 +755,9 @@ body {
   width: 95%;
   line-height: clamp(2rem, 5vw, 3rem);
   z-index: 100;
-  white-space: pre-wrap;
+}
+
+.View_Text_In_UI p{
   margin: 0;
 }
 
@@ -684,7 +765,7 @@ body {
   line-height: normal !important;
   font-size: clamp(1.1rem, 3vw, 1.6rem) !important;
   font-weight: bolder;
-  margin: clamp(4rem, 6vw, 6rem) 0 clamp(0rem, 2vw, 1rem) 0 !important;
+  margin: clamp(1.5rem, 3vw, 3rem) 0 clamp(.1rem, 1vw, 1rem) 0 !important;
   color: #ab8834;
 }
 
@@ -793,9 +874,8 @@ body {
 
 .cards:hover {
   transform: scale(1.03);
-  box-shadow: 0 0 30px rgba(255, 255, 255, 1),
-    0 0 60px rgba(255, 208, 38, 0.8),
-    0 0 90px rgba(4, 0, 255, 0.7);
+  outline: 2px solid rgba(255,215,0,0.3);
+  filter: drop-shadow(0 0 8px gold);
   transition: all .2s ease;
 }
 
@@ -840,6 +920,13 @@ body {
 }
 
 @-moz-document url-prefix() {
+
+  *{
+    scrollbar-width: thin;
+    scrollbar-color: #FFD700 #2A2A2A;
+    scroll-behavior: smooth;
+  }
+
   .Para_Con {
     height: 23.5vmin;
   }
@@ -872,7 +959,6 @@ body {
   border: 1px solid #555;
 }
 
-.model_note::placeholder,
 .title::placeholder {
   color: rgb(163, 138, 0);
   font-size: clamp(.7rem, 1.2vw, 2.2rem);
@@ -1064,6 +1150,7 @@ body {
 }
 
 .searchbar h1 {
+  user-select: none;
   color: #e3b246;
   font-size: clamp(60%, 4vw, 180%) !important;
   margin: 0;
@@ -1101,10 +1188,6 @@ body {
   pointer-events: none;
 }
 
-.addbtn {
-  padding-top: 1.8vmin;
-}
-
 
 .addbtn svg {
   height: clamp(.8rem, 1.2vw, 1.5rem);
@@ -1113,6 +1196,7 @@ body {
 
 
 .loading {
+  user-select: none;
   position: fixed;
   z-index: 99;
   display: flex;
@@ -1141,9 +1225,11 @@ body {
   font-weight: bold;
   letter-spacing: 1px;
   font-style: italic;
+  user-select: none;
 }
 
 .loading p {
+  user-select: none;
   height: 8vmin;
   width: 8vmin;
   border-radius: 100%;
@@ -1207,7 +1293,7 @@ body {
   width: 100%;
   height: 100%;
   background: rgb(20 20 20 / 97%);
-  display: none;
+  /* display: none; */
   transition: opacity .3s ease;
   opacity: 1;
   border-radius: 2vmin;
@@ -1337,9 +1423,12 @@ video:hover::-webkit-media-controls-panel {
 
 .attachmentBtns button,
 .custom_Choose_file {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: #3A3A3A;
   border: none;
-  padding: 1vmin 2vmin;
+  padding: clamp(.5rem, .8vw, 1rem);
   border-radius: 4px;
   cursor: pointer;
   user-select: none;
@@ -1356,8 +1445,8 @@ video:hover::-webkit-media-controls-panel {
 .attachmentBtns button svg,
 .custom_Choose_file svg {
   fill: #FFD700;
-  width: clamp(.8rem, 1.5vw, 3rem);
-  height: clamp(.8rem, 1.5vw, 3rem);
+  width: clamp(1rem, 1.5vw, 3rem);
+  height: clamp(1rem, 1.5vw, 3rem);
 }
 
 .attachmentBtns button:hover,
@@ -1374,6 +1463,25 @@ video:hover::-webkit-media-controls-panel {
   transition: all .5s;
 }
 
+
+.MarkDownMenu button{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(.4rem, .6vw, .6rem) !important;
+  font-size: clamp(1rem, .8vw, 2rem) !important;
+}
+
+.MarkDownMenu button:hover{
+  background-color: rgb(100, 100, 100);
+}
+
+.MarkDownMenu button svg{
+  padding: 0;
+  margin: 0;
+  width: clamp(1.2rem, 2vw, 3rem) !important;
+  height: clamp(1.2rem,2vw, 3rem) !important;
+}
 
 
 /* ------------------------------------- */
@@ -1546,6 +1654,7 @@ button:disabled {
   transform: translateX(-100vmin);
   transition: transform .3s ease-in;
   top: 40vh;
+  user-select: none;
 }
 
 .Critical_Error_Active {
@@ -1611,6 +1720,7 @@ button:disabled {
   justify-content: space-between;
   opacity: 0;
   pointer-events: none;
+  user-select: none;
   min-width: 10%;
   padding: 0 1vmin;
 }
@@ -1692,6 +1802,7 @@ button:disabled {
 }
 
 .storage_capacity .used_capacity span {
+  user-select: none;
   font-size: 2.2vmin;
   color: #E3B23C;
   position: absolute;
@@ -1732,6 +1843,7 @@ button:disabled {
 }
 
 .delete-modal {
+  user-select: none;
   position: fixed;
   top: 0;
   bottom: 0;
@@ -1837,6 +1949,7 @@ button:disabled {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: gold transparent;
+  scroll-behavior: smooth;
   margin: 0;
   padding: 0;
 }
@@ -2029,6 +2142,7 @@ button:disabled {
   margin: auto;
   height: unset !important;
   width: clamp(13rem, 32vw, 48rem);
+  user-select: none;
 }
 
 .Load_All_Notes_Container_Show_override_position {
@@ -2050,4 +2164,209 @@ button:disabled {
   background-color: gray !important;
   stroke: #c5a800 !important;
   fill: none !important;
+}
+
+.Active_btn {
+  background-color: #000000 !important;
+  color: #fff;
+}
+
+input[type="checkbox"][data-readonly] {
+  pointer-events: none;      /* disable interaction */
+  opacity: 1;                /* full opacity */
+  filter: none;              /* no graying */
+  cursor: default;           /* normal cursor */
+  accent-color: #2a9d8f;     /* vibrant teal */
+}
+
+/* if you want the box itself to fill when checked */
+input[type="checkbox"][data-readonly]:checked {
+  background-color: #2a9d8f;
+  border-color: #2a9d8f;
+}
+
+/* #toolbar {
+  margin-bottom: 10px;
+}
+
+#toolbar button {
+  margin-right: 5px;
+  padding: 6px 12px;
+  cursor: pointer;
+  background: #222;
+  border: 1px solid #555;
+  color: #c3c3c3;
+}
+
+#toolbar button.active {
+  background-color: #555;
+  color: #fff;
+}
+
+#editor {
+  width: 100%;
+  min-height: 250px;
+  border: 1px solid #555;
+  padding: 10px;
+  overflow: auto;
+  background: #111;
+  color: #fff;
+}
+
+#notes-panel,
+#note-view {
+  margin-top: 20px;
+  border: 1px solid #444;
+  padding: 10px;
+  background: #111;
+}
+
+#notes-panel ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#notes-panel li {
+  cursor: pointer;
+  padding: 4px;
+  border-bottom: 1px solid #333;
+}
+
+#notes-panel li:hover {
+  background: #333;
+}
+
+#note-view {
+  display: none;
+}
+
+#note-view h3 {
+  margin-top: 0;
+}
+ */
+/* --------------- Your “Robust” Styles --------------- */
+/* Tables */
+.table-container {
+  width: 100%;
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  border: 1px solid #444;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.table-container::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #131313;
+  color: #d7d7d7;
+  margin: 0;
+}
+
+th,
+td {
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  padding: clamp(.2rem, 1vw, .5rem) clamp(.4rem, 1vw, .8rem);
+  border: 1px solid #444;
+  vertical-align: top;
+}
+
+th {
+  background-color: #333;
+}
+
+/* Headings */
+/* h1,
+h2,
+h3 {
+  margin: 1.5rem 0;
+  font-weight: bolder;
+}
+
+h4,
+h5,
+h6 {
+  margin: 2rem 0;
+  font-weight: bolder;
+} */
+
+/* Horizontal rule */
+hr {
+  border: none;
+  border-top: 1px solid #444;
+  margin: 1em 0;
+  background: none;
+  height: 1px;
+}
+
+/* Lists */
+ul,
+ol {
+  margin: 0.5em 0 0.5em 1.5em;
+  word-wrap: break-word; /* Break long words to fit container */
+  padding: 0;
+}
+
+ul li,
+ol li {
+  margin: 1rem 0;
+}
+
+/* Blockquotes */
+.blockquote,
+blockquote {
+  padding-left: 1em;
+  margin: 1.5rem 0;
+  border-left: 3px solid #ccc;
+  font-style: italic;
+  color: #d1bd47;
+}
+
+/* Code blocks */
+.code-block,pre {
+  border-radius: 5px;
+  overflow-x: auto;
+  font-family: Consolas, "Courier New", monospace;
+  line-height: 1.5;
+  max-width: 100%;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.code-block{
+  padding: clamp(0.5rem, .8vw, 1rem);
+  margin: clamp(0.5rem, .8vw, 1rem) 0;
+  background: #3b3b3b;
+  color: #ccc;
+}
+
+.code-block::-webkit-scrollbar, pre::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Links */
+a {
+  color: #006aff;
+  text-decoration: none;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+a:hover {
+  color: #FFD700;
+  text-decoration: underline;
+}
+
+a:focus {
+  outline: 2px dashed #1a0dab;
+  outline-offset: 2px;
 }
