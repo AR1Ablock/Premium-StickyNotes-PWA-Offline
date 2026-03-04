@@ -1,5 +1,9 @@
+import { fileURLToPath, URL } from 'node:url';
+import { ViteSSG } from 'vite-ssg'; // Add this
+//
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+//
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
@@ -8,6 +12,8 @@ export default defineConfig({
     vue(),
 
     VitePWA({
+      workbox: { maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5 MB 
+      },
       registerType: 'autoUpdate',
       includeAssets: ['robots.txt', 'App_Icon/*.png'],
       manifest: {
@@ -15,23 +21,28 @@ export default defineConfig({
         short_name: 'Sticky Notes',
         start_url: '/',
         display: 'standalone',
-        background_color: '#f5f5f5',
-        theme_color: '#4CAF50',
+        background_color: '#1e1e1eff',
+        theme_color: '#f4d145ff',
         scope: '/',
         orientation: 'portrait',
         lang: 'en-US',
         description: 'A beautiful, native-like notes app built with Vue.js.',
         icons: [
           {
-            "src": "/App_Icon/note_1536.png",
-            "sizes": "1536x1536",
+            "src": "/App_Icon/note_192.png",
+            "sizes": "192x192",
             "type": "image/png"
           },
           {
             "src": "/App_Icon/note_512.png",
             "sizes": "512x512",
             "type": "image/png"
-          }
+          },
+          {
+            "src": "/App_Icon/note_1536.png",
+            "sizes": "1536x1536",
+            "type": "image/png"
+          },
         ],
         screenshots: [
           {
@@ -44,13 +55,40 @@ export default defineConfig({
             "src": "/App_Icon/note_512.png",
             "sizes": "512x512",
             "type": "image/png"
-          }
+          },
+          {
+            "src": "/App_Icon/note_192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+          },
         ]
       }
     }),
   ],
   build: {
-    sourcemap: true, // Enable source maps but remove in production builds
+    minify: 'terser', terserOptions: {
+      compress: {
+        drop_console: true,
+        // removes console.log, console.error, console.warn, etc. 
+        drop_debugger: true // removes debugger statements 
+      },
+      mangle: true
+    },
+    target: 'esnext',
+    sourcemap: false, // Enable source maps but remove in production builds
+  },
+  ssgOptions: {  // Prerender config
+    script: 'async',  // Async hydration
+    formatting: 'minify',  // Minify HTML
+    dirStyle: 'nested',  // Styles output
+    includedRoutes(paths, routes) {  // Only prerender root
+      return ['/'];
+    }
+  },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    },
   },
   worker: {
     format: "es", // Ensure ES module format for workers
@@ -60,7 +98,7 @@ export default defineConfig({
   },
   server: {
     // host: true,
-    hmr : true,
+    hmr: true,
     watch: {
       ignored: ['**/node_modules/**', '**/dist/**']  // add other paths as needed
     },
