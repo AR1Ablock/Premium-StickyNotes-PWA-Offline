@@ -1,0 +1,7 @@
+User-agent: *
+Disallow:
+User-agent: *
+Allow: /
+Disallow: /admin/  # maybe in future path
+
+Sitemap: https://colorfulnotepaddapp.web.app/sitemap.xml
