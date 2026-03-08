@@ -171,12 +171,12 @@ let Rotation_Resize_Animation_ID = null;
 //
 let Is_Rotating = false;
 let Rotation_State = {
-  startAngle: 0,
-  startRotation: 0,
-  centerX: 0,
-  centerY: 0,
-  container: null,
-  editorRef: null
+    startAngle: 0,
+    startRotation: 0,
+    centerX: 0,
+    centerY: 0,
+    container: null,
+    editorRef: null
 };
 
 
@@ -467,37 +467,40 @@ async function lazyLoadWithAnimation(el) {
             el.previousElementSibling.style.transition = "opacity 0.2s ease, transform 0.3s ease";
             el.previousElementSibling.style.opacity = 0;
             el.previousElementSibling.style.transform = "scale(0)";
+            await new Promise(r => requestAnimationFrame(r));
             await new Promise((resolve) => setTimeout(resolve, 300));
             el.previousElementSibling.style.display = "none";
+            await new Promise(r => requestAnimationFrame(r));
             //
             console.log('Applying Real Animation Stage 1 Passed');
             //
             if (abort_Controller()) await new Promise((resolve) => setTimeout(resolve, 1000));
         }
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise(r => requestAnimationFrame(r));
         //
         el.style.display = 'block';
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise(r => requestAnimationFrame(r));
         el.style.transition = "opacity 0.2s ease, transform 0.3s ease";
         el.style.transform = "scale(1)";
         el.style.opacity = 1;
+        await new Promise(r => requestAnimationFrame(r));
         console.log('Applying Real Animation Stage 2 Passed');
         /* enabling video overlay */
         if (el.tagName === "VIDEO") {
             if (abort_Controller()) await new Promise((resolve) => setTimeout(resolve, 1000));
             if (el.nextElementSibling) {
                 el.nextElementSibling.style.display = 'block';
-                await new Promise((resolve) => setTimeout(resolve, 5));
+                await new Promise(r => requestAnimationFrame(r));
                 el.nextElementSibling.style.transition = "opacity 0.2s ease, transform 0.3s ease";
                 el.nextElementSibling.style.transform = "scale(1)";
                 el.nextElementSibling.style.opacity = 1;
+                await new Promise(r => requestAnimationFrame(r));
                 el.nextElementSibling.addEventListener("click", Remove_Video_Overlay);
                 console.log('Applying Real Animation Stage 3 for Videos Passed');
             }
         }
         if (timer)
-            clearTimeout(timer);
-
+        clearTimeout(timer);
         timer = setTimeout(() => {
             if (editorLenis)
                 editorLenis.resize(); // resize lenis scrollbar after add media so it add media height to its scroll bar.

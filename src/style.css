@@ -1055,7 +1055,7 @@ body {
 
 .Card_Para {
   cursor: pointer;
-  margin: 1.5vmin 0;
+  margin: 1vmin 0 2vmin 0;
   word-wrap: break-word;
   width: 95%;
 }
@@ -2140,7 +2140,7 @@ button:disabled {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   height: 4vmin;
   width: 17vmin;
   font-weight: bolder;
@@ -2151,22 +2151,25 @@ button:disabled {
   border: 3px solid #E3B23C;
 }
 
-.storage_capacity .used_capacity {
-  display: flex;
-  align-items: center;
-  margin: 0;
-  width: 30%;
-  height: 4vmin;
-  background-color: #E3B23C;
-}
-
-.storage_capacity .used_capacity span {
+.storage_capacity .storage_cap_text {
+  position: relative;
   user-select: none;
   font-size: 2.2vmin;
-  color: #E3B23C;
-  position: absolute;
+  color: #ffe29d;
   font-weight: bolder;
-  right: 10%;
+  z-index: 9;
+  z-index: 2;
+}
+
+.storage_capacity .used_capacity {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  margin: 0;
+  z-index: 1;
+  width: 30%;
+  background-color: #E3B23C;
 }
 
 .notes-actions button {

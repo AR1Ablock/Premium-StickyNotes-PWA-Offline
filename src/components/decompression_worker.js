@@ -3,8 +3,7 @@ import { decode, ExtensionCodec } from '@msgpack/msgpack';
 // worker.js
 
 self.onmessage = function (e) {
-// eslint-disable-next-line no-debugger
-//debugger
+
   let compressedNote = null;
   let decompressed = null;
   let decompressednote = null;
@@ -67,7 +66,7 @@ self.onmessage = function (e) {
     decompressednote = null;
     transferList = null;
     e.data.Data = null;
-    self.close();
+   // self.close();
   } catch (error) {
     console.log(error);
     self.postMessage({ error: error });

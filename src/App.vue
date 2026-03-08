@@ -70,7 +70,8 @@
             :class="[{ smoothhide: data[index].isCardGoingDeleted }, { disable_Card_While_Saving: data[index].IsLoading }]"
             :data-id="index">
             <div class="Title_Con">
-              <p class="Card_Title"> {{ getShortText(element.title.substring(0, 18), true) }} </p>
+              <p class="Card_Title"> {{ getShortText((element.title != null && element.title != undefined) ?
+                element.title.length > 18 ? element.title.substring(0, 18) : element.title ?? "" : "", true) }} </p>
             </div>
             <div class="Para_Con" @click="RO_ViewNotePage(index)">
               <p class="Card_Para" ref="Each_Note_Preview" v-html="getShortText(element.userWroteHtml, false)"></p>
@@ -3427,8 +3428,8 @@
     <!-- Footer Features -->
     <div class="notes-actions">
       <div class="storage_capacity" title="Storage Capacity">
+        <div class="storage_cap_text">{{ Used_Storage_Capacity }}G / {{ Total_Storage_Capacity }}G</div>
         <span class="used_capacity" ref="Used_Storage_Capacity_Element">
-          <span>{{ Used_Storage_Capacity }}G / {{ Total_Storage_Capacity }}G</span>
         </span>
       </div>
 
@@ -3823,8 +3824,6 @@ import {
 import { EditorContent } from "@tiptap/vue-3"; // The component
 
 // Utilities
-import { isTextFile } from "./components/Text_File_Handler";
-import { isDocumentFile } from "./components/Document_File_Handler";
 import { debugError } from "./components/Global_Error_Handler";
 import Dexie from "dexie";
 import { debounce } from "lodash";
@@ -3851,6 +3850,9 @@ import {
   viewLenis,
   viewRafId,
   initializeLenisScroll,
+  handleEditorKeyboardScroll,
+  resize_lenis_scroll_On_media_Adition,
+  handleViewKeyboardScroll,
 } from "./components/Scroll_Logic";
 
 import { buildHead } from "./scripts/headBuilder";
@@ -3859,6 +3861,7 @@ import { Paste_Procssing } from "./components/Paste_Drag_Drop_Handler";
 import json from './assets/Seed_Note/Seed.json'
 import { Note } from './assets/Seed_Note/Seed.js'
 import { useTouchDetection } from './components/Is_Touch';
+import { getRealFileInfo } from './components/File_Type_Checker';
 
 // .................................... All Variables .........................................
 
@@ -3916,6 +3919,8 @@ let Note_Object = {
   Attachment_Used_Size: null,
   TimeStamp: null,
 };
+
+
 let SupportedMedia = ref([
   // Video formats
   "video/mp4",
@@ -3976,7 +3981,13 @@ let i = 0;
 let j = 0;
 let Max_Accumulated_Attachments_Size_Buffer = ref(20 * 1024 * 1024);
 let Max_Accumulated_Attachments_Size = ref(Max_Accumulated_Attachments_Size_Buffer.value);
-
+// ──────────────────────────────────────────────────────────────
+// TEXT FILE LIMITS (recommended for Tiptap + rich media notes)
+// ──────────────────────────────────────────────────────────────
+const MAX_TEXT_SIZE_HARD = 500 * 1024;
+const MAX_TEXT_SIZE_WARNING = 300 * 1024;
+const LARGE_TEXT_THRESHOLD = 100 * 1024;
+const MAX_ALLOWED_LINES = 6500;
 ////
 let Remove_Loading_Screen = ref(true); // import from editor and attach to view ui tag
 /* let View_Note_Page_UI = ref(); */ let Newly_Created_Notes_Id_For_Backend_To_Avoid_Send_Them_During_pagination = ref(
@@ -4468,21 +4479,21 @@ const getCleanText = (text) =>
       .replace(/\s\s+/g, " ");
 
 const getShortText = (html, Is_Title) => {
-  if (!html) return ""; // Handle null/undefined cases
+  if (!html || html == null || html == undefined || html == "") return ""; // Handle null/undefined cases
 
   let wrapper;
+  html = String(html);
   // Remove bold/italic/strikethrough, color, heading, bullet markers
   if (!Is_Title) {
     wrapper = document.createElement("div");
     wrapper.innerHTML = html;
   }
-  let source_text = Is_Title ? html : wrapper.innerText;
+  let source_text = Is_Title ? html ?? "" : wrapper.innerText ?? "";
 
-  let clone_text = source_text;
+  let clone_text = source_text?.trim();
   html = getCleanText(clone_text);
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
-  const threshold =
-    window.outerWidth <= 500 ? (isFirefox ? 95 : 110) : isFirefox ? 130 : 140;
+  const threshold = window.outerWidth <= 500 ? (isFirefox ? 95 : 110) : isFirefox ? 130 : 140;
   if (html.length > threshold) {
     return html.substring(0, threshold) + "...";
   } else {
@@ -4597,14 +4608,24 @@ function Stop_All_Playing_Media(Source) {
 
 // --- Main Close & Cleanup Function ---
 
+let pendingCloseTimeout = null;           // ← NEW (cancellable)
+
 async function CloseBtn(original = "note_making") {
   try {
+    if (!Opening_note_In_view_mode_completed.value) return;
+
+    if (pendingCloseTimeout) {
+      clearTimeout(pendingCloseTimeout);
+      pendingCloseTimeout = null;
+    }
+
     if (original === "note_making") {
       // NOTE-MAKING MODE: Minimal UI changes and essential cleanup.
       if (EditMode.value) return;
       if (isTouchFirst.value)
         await waitForKeyboardClose(200);
       toggle_delete_model.value = false;
+      await new Promise(r => requestAnimationFrame(r));
       isAddBtnPressed.value = false;
       CurrentIndex.value = null;
       Close_Btn_Sound.play();
@@ -4629,18 +4650,20 @@ async function CloseBtn(original = "note_making") {
         Stop_All_Playing_Media("View_Mode"); // online media stop loading handled inside this method.
         fadeOutMediaElements(); // visually fade out media immediately
         IsRoViewNoteOpen.value = false;
-        setTimeout(() => {
+        pendingCloseTimeout = setTimeout(() => {
           SendNoteForView_Title.value = null;
           SendNoteForView_Message.value = null;
+          pendingCloseTimeout = null;
         }, 400);
         Close_Btn_Sound.play();
       } else {
         Stop_All_Playing_Media("View_Mode"); // online media stop loading handled inside this method.
         console.log("UI form without media");
         IsRoViewNoteOpen.value = false;
-        setTimeout(() => {
+        pendingCloseTimeout = setTimeout(() => {
           SendNoteForView_Title.value = null;
           SendNoteForView_Message.value = null;
+          pendingCloseTimeout = null;
         }, 400);
         Close_Btn_Sound.play();
       }
@@ -4667,6 +4690,10 @@ async function CloseBtn(original = "note_making") {
   } catch (error) {
     console.log("Error in CloseBtn:", error.stack);
     alert("Something went wrong While Closing... Please Reload The Page");
+  }
+  finally {
+    Opening_note_In_view_mode_progressing.value = false;
+    Opening_note_In_view_mode_completed.value = false;
   }
 }
 
@@ -4920,13 +4947,16 @@ function terminateAllWorkers(type = null, ...ids) {
 
       if (idSet.size > 0) {
         // Terminate only specified workers
-        idSet.forEach((id) => {
+        for (const id of idSet) {
+          if (!id) continue;
+
           if (registry.has(id)) {
-            terminateWorker(id, registryType);
+            const res = terminateWorker(id, registryType);
+            if (res) idSet.delete(id);
           } else {
             console.warn(`[WorkerManager] Worker ID ${id} not found in ${registryType}.`);
           }
-        });
+        }
       } else {
         // Terminate all workers in this category
         console.log(
@@ -4945,25 +4975,43 @@ function terminateAllWorkers(type = null, ...ids) {
 }
 
 function terminateWorker(id, registryType) {
+  let worker;
   try {
     const registry = workerRegistries[registryType];
     if (!registry || !registry.has(id)) {
       console.warn(`[WorkerManager] Worker ID ${id} not found in ${registryType}.`);
-      return;
+      return false;
     }
 
-    const worker = registry.get(id);
+    worker = registry.get(id);
+    if (!worker) {
+      console.error(`[WorkerManager] Error Worker not found ${id}:`);
+      return false;
+    }
+
     console.log(`[WorkerManager] Terminating Worker ${id} of type ${registryType}...`);
 
     worker.postMessage({ command: "SUICIDE" });
-    worker.terminate();
+
+    worker.onmessage = (event) => {
+      if (event.data.status === "SUICIDE_CONFIRMED") {
+        console.log("[Main] Worker confirmed suicide");
+        worker.terminate();
+      }
+      if(event.data.error) worker.terminate();
+    };
     registry.delete(id);
 
-    console.log(`[WorkerManager] Worker ${id} successfully terminated.`);
+    console.log(`[WorkerManager] ✅ Worker ${id} successfully terminated.`);
+    return true;
   } catch (error) {
     console.error(`[WorkerManager] Error terminating Worker ${id}:`, error.message);
+    worker.terminate();
+    return false;
   }
 }
+
+
 
 // This function now returns a promise that resolves when the worker has processed the note.
 function Decompresion_Worker(compressedNote, Is_Note) {
@@ -5003,7 +5051,7 @@ function Decompresion_Worker(compressedNote, Is_Note) {
           e.data.note.IsLoading = false;
           //
           Is_Note ? data.value.push(e.data.note) : null;
-          newWorker.terminate();
+        // newWorker.terminate();
           resolve({ Id: e.data.Id, Data: e.data.note });
           e.data.note = null;
         }
@@ -5526,7 +5574,7 @@ function Compresion_Worker(data, type, operation) {
           controller.abort();
         } else {
           console.log("Worker_finished Product ", event.data);
-          worker.terminate(); // Clean up worker after task completion
+          /*           worker.terminate(); // Clean up worker after task completion */
           resolve({
             Operation: event.data.Operation,
             Type: event.data.Type,
@@ -5924,8 +5972,7 @@ function startMediaRecorder(type) {
       Max_Accumulated_Attachments_Size.value <=
       Max_Accumulated_Attachments_Size_Buffer.value
     ) {
-      DisableDoneBtnElement.value.disabled = true;
-      DisableDoneBtnElement.value.style.backgroundColor = "#d9ae38";
+      Disable_Done_Btn(true);
 
       // Get a supported MIME type based on the recording type.
       supportedMime.value = getSupportedMimeType(type);
@@ -6003,8 +6050,7 @@ function stopRecording(timeOut) {
     Is_Audio_Recording.value = false;
     recordVideoButton.value.disabled = false;
     recordAudioButton.value.disabled = false;
-    DisableDoneBtnElement.value.disabled = false;
-    DisableDoneBtnElement.value.style.backgroundColor = "#d9ae38";
+    Disable_Done_Btn(false);
     overlayElement.value.style.display = "none";
   } catch (error) {
     console.log(error.message);
@@ -6342,16 +6388,17 @@ async function manageMedia(
       return;
     }
 
+    Disable_Done_Btn(true);
+
     // Check if the file type is supported
-    if (
-      !(
-        SupportedMedia.value.includes(selectedFile.type) ||
-        (await isTextFile(selectedFile)) ||
-        (await isDocumentFile(selectedFile))
-      )
-    ) {
+    const fileInfo = await getRealFileInfo(selectedFile);
+
+    const isSupportedMedia = SupportedMedia.value.includes(fileInfo.mime);
+    const isSupported = isSupportedMedia || fileInfo.category === 'text' || fileInfo.category === 'document';
+
+    if (!isSupported) {
       Show_Create_Edit_Model_Warning("File Not Supported!", 1500);
-      pasting ? (file = null) : (fileInput_tag_ref.value.value = ""); // Reset file input
+      pasting ? (file = null) : (fileInput_tag_ref.value.value = "");
       return;
     }
 
@@ -6361,20 +6408,34 @@ async function manageMedia(
     let storage = null;
     let storageType = "";
 
-    if (await isTextFile(selectedFile)) {
-      storageType = "text";
-    } else if (selectedFile.type.startsWith("image/")) {
-      storage = EditMode.value ? Edit_Mode_images : images;
-      storageType = "image";
-    } else if (selectedFile.type.startsWith("video/")) {
-      storage = EditMode.value ? Edit_Mode_VideoStorage : VideoStorage;
-      storageType = "video";
-    } else if (selectedFile.type.startsWith("audio/")) {
-      storage = EditMode.value ? Edit_Mode_AudioStorage : AudioStorage;
-      storageType = "audio";
-    } else if (await isDocumentFile(selectedFile)) {
-      storage = EditMode.value ? Edit_Mode_DocumentStorage : DocumentStorage;
-      storageType = "document";
+    switch (fileInfo.category) {
+      case "text":
+        storageType = "text";
+        break;
+
+      case "image":
+        storage = EditMode.value ? Edit_Mode_images : images;
+        storageType = "image";
+        break;
+
+      case "video":
+        storage = EditMode.value ? Edit_Mode_VideoStorage : VideoStorage;
+        storageType = "video";
+        break;
+
+      case "audio":
+        storage = EditMode.value ? Edit_Mode_AudioStorage : AudioStorage;
+        storageType = "audio";
+        break;
+
+      case "document":
+        storage = EditMode.value ? Edit_Mode_DocumentStorage : DocumentStorage;
+        storageType = "document";
+        break;
+
+      default:
+        // Should never reach here because of isSupported check
+        storageType = "unknown";
     }
 
     // If the file belongs to one of the storages, check for duplicates (same name & size)
@@ -6397,25 +6458,12 @@ async function manageMedia(
         Show_Create_Edit_Model_Warning('New File blocked: already processing previous.', 3000);
         return;
       }
-      Paste_Procssing.value = true;
-      fileData = await readFileAsync(selectedFile, true);
-      // Insert as a paragraph node 
-      if (fileData.length > 50000) {  // ~500k characters
-        Show_Create_Edit_Model_Warning("Text file is very large. Inserting as paragraphs...", 5000);
-      }
-      // Split into lines and convert to proper paragraphs
-      const lines = fileData.split(/\r?\n/);
-      const paragraphNodes = lines.map(line => ({
-        type: 'paragraph',
-        content: line.trim() ? [{ type: 'text', text: line }] : []
-      }));
-      // Insert all at once (much faster and cleaner)
-      Tiptap_Editor.chain().insertContent(paragraphNodes).focus().run();
-      if (editorLenis) editorLenis.resize();
+      const result = await handleTextFileInsertion(selectedFile);
+      if (!result.success) Show_Create_Edit_Model_Warning('Text File Insertion Failed!', 3000);
       //
     } else {
       fileData = await readFileAsync(selectedFile, false);
-      fileType = selectedFile.type;
+      fileType = fileInfo.mime;
       fileName = normalizeString(selectedFile.name);
       fileSize = selectedFile.size;
 
@@ -6445,15 +6493,79 @@ async function manageMedia(
     fileSize = 0;
     fileData = null;
     Paste_Procssing.value = false;
+    Disable_Done_Btn(false);
     if (!isTouchFirst.value) editor.value.$el.firstElementChild.focus();
   }
 }
 
-/* try {
+
+
+async function handleTextFileInsertion(selectedFile) {
+  if (!selectedFile) return { success: false };
+
+  const sizeMB = (selectedFile.size / 1024 / 1024).toFixed(1);
+
+  // ── 1. HARD LIMIT ─────────────────────────────────────────────
+  if (selectedFile.size > MAX_TEXT_SIZE_HARD) {
+    Show_Create_Edit_Model_Warning(`Text File Too Large, Attach as Document instead?`, 6000);
+    return { success: true, action: "offer_as_document" };
+  }
+
+  // ── 2. SOFT WARNING ───────────────────────────────────────────
+  if (selectedFile.size > MAX_TEXT_SIZE_WARNING) {
+    const proceed = confirm(
+      `\nThis text file is large (${sizeMB} MB / ~${Math.round(selectedFile.size / 1024)} KB).\n\n` +
+      `It may feel slower when editing or scrolling.\n\n` +
+      `Continue anyway?`
+    );
+    if (!proceed) return { success: true };
+  }
+
+  try {
+    Paste_Procssing.value = true;
+
+    // Small yield so spinner is visible before heavy work
+    await new Promise(r => requestAnimationFrame(r));
+
+    const fileData = await readFileAsync(selectedFile, true);
+
+    // Show nice message for large files
+    if (fileData.length > LARGE_TEXT_THRESHOLD) {
+      Show_Create_Edit_Model_Warning("Large text file — inserting as paragraphs...", 3000);
+      await new Promise(r => setTimeout(r, 40));
+    }
+
+    let lines = fileData.split(/\r?\n/);
+
+    // Extra safety: truncate if somehow over limit
+    if (lines.length > MAX_ALLOWED_LINES) {
+      lines.length = MAX_ALLOWED_LINES;
+      lines.push("\n\n[File, Number of Lines Trimmed]");
+      lines.push(`[Text File, ${MAX_ALLOWED_LINES} Are Max Allowed Lines]\n\n`);
+    }
+
+    // Convert to Tiptap paragraph nodes
+    const paragraphNodes = lines.map(line => ({
+      type: 'paragraph',
+      content: line.trim() ? [{ type: 'text', text: line }] : []
+    }));
+
+    // Fast bulk insert
+    Tiptap_Editor.chain().insertContent(paragraphNodes).focus().run();
+
+    if (editorLenis) editorLenis.resize();
+
+    return { success: true };
 
   } catch (error) {
-    debugError(error, 'error in updateActiveStates');
-  } */
+    console.error("Text file insertion failed:", error);
+    Show_Create_Edit_Model_Warning("Failed to insert text file", 3000);
+    return { success: false };
+  } finally {
+    Paste_Procssing.value = false;
+  }
+}
+
 
 let Media_Object_Count = ref({
   image: 0,
@@ -6670,11 +6782,28 @@ function RO_View_Mode_Array_And_Links_Cleaner() {
   }
 }
 
+let Opening_note_In_view_mode_progressing = ref(false);
+let Opening_note_In_view_mode_completed = ref(false);
+
 async function RO_ViewNotePage(index) {
   let Html_String;
   let RO_View_Mode_Pull_Decompressed_Media_From_Index_DB = null;
   let Final_Media_Embedded_Html_String;
+  let mediaElements = null;
   try {
+    if (Opening_note_In_view_mode_progressing.value) return;
+
+    // Cancel any pending close timeout from previous operation
+    if (pendingCloseTimeout) {
+      clearTimeout(pendingCloseTimeout);
+      pendingCloseTimeout = null;
+    }
+
+
+    Opening_note_In_view_mode_progressing.value = true;
+    data.value[index].IsLoading = true;
+    await new Promise(r => requestAnimationFrame(r));
+    await new Promise((resolve) => setTimeout(resolve, 5));
     updateRefreshKey();
     Blur_Background_WhileOpening_Note.value = true;
     View_Btn_Sound.play();
@@ -6685,7 +6814,9 @@ async function RO_ViewNotePage(index) {
       Html_String
     );
     IsRoViewNoteOpen.value = true;
+    await new Promise(r => requestAnimationFrame(r));
     await new Promise((resolve) => setTimeout(resolve, 400));
+    data.value[index].IsLoading = false;
     if (Toggle_Reading_Form_Full_Screen.value)
       document.body.classList.add("disable_body_scroll_on_note_full_screen");
 
@@ -6698,7 +6829,9 @@ async function RO_ViewNotePage(index) {
       //
       await nextTick();
       //
-      await Promise.all(Array.from(Note_View_UI_Text_Element.value.querySelectorAll("img, video, audio, .document")).map(async (el) => await runAnimation(el)));
+      mediaElements = Array.from(Note_View_UI_Text_Element.value.querySelectorAll("img, video, audio"));
+      await Promise.all(mediaElements.map(el => runAnimation(el)));
+      //
       if (viewLenis) viewLenis.resize();
 
       // Clean up the decompressed media object to free memory
@@ -6717,13 +6850,13 @@ async function RO_ViewNotePage(index) {
       RO_View_Mode_Pull_Decompressed_Media_From_Index_DB = null;
     } else {
       await nextTick();
+
       // for onlin media if local is no found in array.
-      await Promise.all(
-        Array.from(
-          Note_View_UI_Text_Element.value.querySelectorAll("img, video, audio, .document")
-        ).map(async (el) => await runAnimation(el))
-      );
+      mediaElements = Array.from(Note_View_UI_Text_Element.value.querySelectorAll("img, video, audio"));
+      await Promise.all(mediaElements.map(el => runAnimation(el)));
+
       if (viewLenis) viewLenis.resize();
+      View_Note_Page_UI.value.focus();
     }
   } catch (error) {
     RO_View_Mode_Pull_Decompressed_Media_From_Index_DB = null;
@@ -6731,8 +6864,13 @@ async function RO_ViewNotePage(index) {
     console.log(error.message);
     debugError(error, "RO_View_Note");
   }
+  finally {
+    Opening_note_In_view_mode_completed.value = true;
+  }
 }
 // RO_Mode_End.
+
+
 
 async function handleViewMode(htmlString, dbMedia) {
   let finalHtml = htmlString;
@@ -6794,10 +6932,25 @@ function updateMediaSources(htmlString, mediaArray, mediaType) {
   }
 }
 
+
+function Disable_Done_Btn(disable = false) {
+
+  if (disable) {
+    DisableDoneBtnElement.value.disabled = true;
+    DisableDoneBtnElement.value.style.backgroundColor = "#d9ae38";
+  }
+  else {
+    DisableDoneBtnElement.value.disabled = false;
+    DisableDoneBtnElement.value.style.backgroundColor = "#d9ae38";
+  }
+}
+
+
 async function EditBtn(index) {
+  let isLargeNote = false;
+  let Media_Free_Json = null;
+  //
   try {
-    let Note_Json_Object_For_Edit_Mode = null;
-    //
     Toggle_MarkDown_Menu.value = false;
     Note_heading_element.value.textContent = "Edit Note";
     disable_color_notes_switcher_btn.value = false;
@@ -6806,81 +6959,113 @@ async function EditBtn(index) {
 
     EditMode.value = true;
     Blur_Background_WhileOpening_Note.value = true;
+    CurrentIndex.value = index;
 
-
-    Save_The_Create_Notes_Max_Accu_Attachment_Capacity_While_Switching_To_Edit_Note.value =
-      Max_Accumulated_Attachments_Size.value;
-
-    // saving create note if its ppending in background.
-    if (editor.value.$el.firstElementChild.innerText.trim() !== "" || CurrentlyWritingTitle.value?.length) {
+    // Save pending create note if any
+    if (editor.value.$el.firstElementChild.innerText.trim() !== "" || editor.value.$el.firstElementChild.innerHTML !== "" || CurrentlyWritingTitle.value?.length) {
       temp_for_save_Create_Note_Text_if_available_parallelly.value[0] = CurrentlyWritingTitle.value;
       temp_for_save_Create_Note_Text_if_available_parallelly.value[1] = Tiptap_Editor.getJSON();
     }
-    //
+
+    Tiptap_Editor.commands.clearContent(true);
+
+    Save_The_Create_Notes_Max_Accu_Attachment_Capacity_While_Switching_To_Edit_Note.value = Max_Accumulated_Attachments_Size.value;
     Max_Accumulated_Attachments_Size.value = data.value[index].Attachment_Used_Size;
 
-    console.log("testing--> MAX ", Max_Accumulated_Attachments_Size.value);
-    console.log("testing--> Used Size ", data.value[index].Attachment_Used_Size);
-    /////
     CurrentlyWritingTitle.value = data.value[index].title;
-    Note_Json_Object_For_Edit_Mode = data.value[index].userWroteJson;
-    //
-    const clonedJson = JSON.parse(JSON.stringify(Note_Json_Object_For_Edit_Mode));
-    let Media_Free_Json = Remove_Dead_Link_Media_Nodes_From_Json(clonedJson);
-    //
-    CurrentIndex.value = index;
-    isAddBtnPressed.value = true;
-    Paste_Procssing.value = true;
 
-    // wait few sec to let editor open using styling animation to avoid glitching the ui.
-    await new Promise(resolve => setTimeout(resolve, 400));
-    Paste_Procssing.value = false;
+    isAddBtnPressed.value = true;           // ← UI starts opening + animation
+    Disable_Done_Btn(true);
+
     //
-    Tiptap_Editor.commands.setContent(Media_Free_Json);
+    await new Promise(r => requestAnimationFrame(r)); // let Vue paint the loader
+    await new Promise(r => setTimeout(r, 400));   // let animation finish smoothly
+
+    let Note_Json_Object_For_Edit_Mode = data.value[index].userWroteJson;
+
+    const hasMedia = containsMedia(Note_Json_Object_For_Edit_Mode?.content ?? []);
+    isLargeNote = Note_Json_Object_For_Edit_Mode.content?.length > 20 || hasMedia;
+
+    if (hasMedia) {
+      const clonedJson = JSON.parse(JSON.stringify(Note_Json_Object_For_Edit_Mode));
+      Media_Free_Json = Remove_Dead_Link_Media_Nodes_From_Json(clonedJson);
+    }
+
+    // Decide if we need loading spinner
+
+    if (isLargeNote) {
+      Paste_Procssing.value = true;
+      await new Promise(r => requestAnimationFrame(r)); // let Vue paint the loader
+      await new Promise(r => setTimeout(r, 10));   // let animation finish smoothly
+    }
+
     document.body.classList.add("disable_body_scroll_on_note_full_screen");
 
-    if (EditMode.value) {
-      let Edit_Mode_Pull_Decompressed_Media_From_Index_DB = await Get_Media_from_Db(
-        data.value[index].id
-      );
-      console.log("Decompressed_Media ", Edit_Mode_Pull_Decompressed_Media_From_Index_DB);
+    // ==================== HEAVY WORK STARTS HERE (loading stays ON) ====================
+    Tiptap_Editor.commands.setContent(hasMedia ? Media_Free_Json : Note_Json_Object_For_Edit_Mode);
 
-      // Push items into edit mode arrays
-      if (Edit_Mode_Pull_Decompressed_Media_From_Index_DB) {
-        //
-        Note_Json_Object_For_Edit_Mode = await handleEditModeContent(Note_Json_Object_For_Edit_Mode,
-          Edit_Mode_Pull_Decompressed_Media_From_Index_DB,
-          {
-            images: Edit_Mode_images,
-            audio: Edit_Mode_AudioStorage,
-            video: Edit_Mode_VideoStorage,
-            document: Edit_Mode_DocumentStorage,
-          }
-        );
-        Tiptap_Editor.commands.setContent(Note_Json_Object_For_Edit_Mode);
+    let Edit_Mode_Pull_Decompressed_Media_From_Index_DB = await Get_Media_from_Db(data.value[index].id);
 
-        if (Edit_Mode_Pull_Decompressed_Media_From_Index_DB.Id) {
-          terminateAllWorkers("view", Edit_Mode_Pull_Decompressed_Media_From_Index_DB.Id);
-          Edit_Mode_Pull_Decompressed_Media_From_Index_DB.Id = null;
-        }
-        //
-        Edit_Mode_Pull_Decompressed_Media_From_Index_DB = null; // Force clear again
-        //
-      } else {
-        Tiptap_Editor.commands.setContent(Note_Json_Object_For_Edit_Mode);
+    if (Edit_Mode_Pull_Decompressed_Media_From_Index_DB) {
+      Note_Json_Object_For_Edit_Mode = await handleEditModeContent(Note_Json_Object_For_Edit_Mode, Edit_Mode_Pull_Decompressed_Media_From_Index_DB, { images: Edit_Mode_images, audio: Edit_Mode_AudioStorage, video: Edit_Mode_VideoStorage, document: Edit_Mode_DocumentStorage });
+
+      Tiptap_Editor.commands.setContent(Note_Json_Object_For_Edit_Mode);
+
+      if (Edit_Mode_Pull_Decompressed_Media_From_Index_DB.Id) {
+        terminateAllWorkers("view", Edit_Mode_Pull_Decompressed_Media_From_Index_DB.Id);
+        Edit_Mode_Pull_Decompressed_Media_From_Index_DB.Id = null;
       }
-
-      if (editorLenis) editorLenis.resize();
-      console.log("Edit_Mode_images ", Edit_Mode_images.value);
-      console.log("Edit_Mode_AudioStorage ", Edit_Mode_AudioStorage.value);
-      console.log("Edit_Mode_VideoStorage ", Edit_Mode_VideoStorage.value);
-      console.log("Edit_Mode_DocumentStorage ", Edit_Mode_DocumentStorage.value);
+      Edit_Mode_Pull_Decompressed_Media_From_Index_DB = null;
     }
+
+    if (editorLenis) editorLenis.resize();
+
+    // ==================== ONLY NOW hide loader ====================
+    if (isLargeNote) {
+      Paste_Procssing.value = false;
+    }
+
+    if (editorLenis) editorLenis.resize();
+    Disable_Done_Btn(false);
+    console.log("Edit_Mode_images ", Edit_Mode_images.value);
+    console.log("Edit_Mode_AudioStorage ", Edit_Mode_AudioStorage.value);
+    console.log("Edit_Mode_VideoStorage ", Edit_Mode_VideoStorage.value);
+    console.log("Edit_Mode_DocumentStorage ", Edit_Mode_DocumentStorage.value);
   } catch (error) {
     console.log(error.message);
+    if (isLargeNote) Paste_Procssing.value = false; // safety
+    Disable_Done_Btn(false);
   }
 }
 
+
+
+function containsMedia(nodes) {
+  if (!Array.isArray(nodes) || nodes.length === 0) return false;
+
+  const stack = [nodes];
+
+  while (stack.length) {
+    const currentLevel = stack.pop();
+
+
+    for (let i = 0; i < currentLevel.length; i++) {
+      const node = currentLevel[i];
+
+      if (!node || typeof node !== "object") continue;
+
+      if (node.type === "media") {
+        return true;
+      }
+
+      const content = node.content;
+      if (Array.isArray(content) && content.length > 0) {
+        stack.push(content);
+      }
+    }
+  }
+  return false;
+}
 
 
 async function handleEditModeContent(noteJson, dbMedia, storages) {
@@ -7067,6 +7252,21 @@ async function DeleteCard(event, index) {
 }
 
 
+
+function resetToggles() {
+  Toggle_Heading.value = false;
+  Toggle_Font_Size.value = false;
+  Toggle_Line_Spacing.value = false;
+  Toggle_Text_Alignment.value = false;
+  Toggle_link.value = false;
+  link.value = { url: "" };
+  Toggle_Font_Color.value = false;
+  Toggle_Highlight_Color.value = false;
+  Toggle_Block_Background_Color.value = false;
+  Toggle_Table_Cell_Background_Color.value = false;
+}
+
+
 // ........................ This Big function for save data when save or done buton pressed ..........................
 async function DoneBtn() {
   try {
@@ -7208,10 +7408,12 @@ async function Edit_Mode_Done_Btn() {
   finally {
     data.value[CurrentIndex.value].IsLoading = false;
     CurrentIndex.value = null;
+    resetToggles();
   }
 }
 
 function waitForKeyboardClose(maxWait = 500) {
+  new Promise(resolve => requestAnimationFrame(resolve)).then(() => { });
   return new Promise((resolve) => {
     let done = false;
 
@@ -7376,6 +7578,7 @@ async function Create_Note_Done_Btn() {
   finally {
     data.value[data.value.findIndex((n) => n.id == note_And_media_id)].IsLoading = false;
     note_And_media_id = null;
+    resetToggles();
   }
 }
 
@@ -8034,6 +8237,9 @@ onBeforeUnmount(() => {
   //
   if (editorRafId) cancelAnimationFrame(editorRafId);
   if (viewRafId) cancelAnimationFrame(viewRafId);
+  editor.value.$el.firstElementChild.removeEventListener('keydown', handleEditorKeyboardScroll);
+  editor.value.$el.firstElementChild.removeEventListener('load', resize_lenis_scroll_On_media_Adition);
+  View_Note_Page_UI.value.removeEventListener('keydown', handleViewKeyboardScroll);
   if (editorLenis) editorLenis.destroy();
   if (viewLenis) viewLenis.destroy();
   window.removeEventListener("scroll", debouncedScroll); // 🟢 Add this
@@ -8181,6 +8387,9 @@ onUnmounted(() => {
   clearTimeout(debounceTimeout); // Add timeout cleanup
 
   window.removeEventListener("popstate", handlePopState);
+  editor.value.$el.firstElementChild.removeEventListener('keydown', handleEditorKeyboardScroll);
+  editor.value.$el.firstElementChild.removeEventListener('load', resize_lenis_scroll_On_media_Adition);
+  View_Note_Page_UI.value.removeEventListener('keydown', handleViewKeyboardScroll);
   editorLenis.destroy();
   viewLenis.destroy();
   Observer.disconnect();

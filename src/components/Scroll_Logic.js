@@ -96,7 +96,7 @@ function viewRaf(time) {
 }
 
 
-function resize_lenis_scroll_On_media_Adition(e) {
+export function resize_lenis_scroll_On_media_Adition(e) {
     try {
         const el = e.target;
         if (

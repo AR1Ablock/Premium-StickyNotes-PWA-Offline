@@ -29,7 +29,9 @@ self.onmessage = async function(event) {
   try {
     // Handle suicide command first
     if (event.data.command === 'SUICIDE') {
+        console.log("[Worker] Received SUICIDE command");
       self.postMessage({ status: 'SUICIDE_CONFIRMED' });
+      console.log("[Worker] Closing now...");
       self.close();
       return;
     }
@@ -148,6 +150,7 @@ self.onmessage = async function(event) {
       Id: event.data?.Id,
       id: note_id
     });
+    self.close();
   } finally {
     // Cleanup
     note_id = null;
@@ -158,7 +161,7 @@ self.onmessage = async function(event) {
     table = null;
     existing = null;
     updatedRecord = null;
-    // if (db && db.isOpen()) await db.close();
-    self.close();
+    if (db && db.isOpen()) await db.close();
+    // self.close();
   }
 };
