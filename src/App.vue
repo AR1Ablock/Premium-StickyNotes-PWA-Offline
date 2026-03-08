@@ -4612,12 +4612,6 @@ let pendingCloseTimeout = null;           // ← NEW (cancellable)
 
 async function CloseBtn(original = "note_making") {
   try {
-    if (!Opening_note_In_view_mode_completed.value) return;
-
-    if (pendingCloseTimeout) {
-      clearTimeout(pendingCloseTimeout);
-      pendingCloseTimeout = null;
-    }
 
     if (original === "note_making") {
       // NOTE-MAKING MODE: Minimal UI changes and essential cleanup.
@@ -4636,6 +4630,14 @@ async function CloseBtn(original = "note_making") {
       //
     } else {
       // UI VIEW MODE: Immediate UI updates.
+
+      if (!Opening_note_In_view_mode_completed.value) return;
+
+      if (pendingCloseTimeout) {
+        clearTimeout(pendingCloseTimeout);
+        pendingCloseTimeout = null;
+      }
+
       let View_UI_Has_Media = Note_View_UI_Text_Element.value.querySelectorAll("video, audio, img, .video, .audio, .img, .document").length;
       console.log("Closing UI form");
       if (
@@ -4998,7 +5000,7 @@ function terminateWorker(id, registryType) {
         console.log("[Main] Worker confirmed suicide");
         worker.terminate();
       }
-      if(event.data.error) worker.terminate();
+      if (event.data.error) worker.terminate();
     };
     registry.delete(id);
 
@@ -5051,7 +5053,7 @@ function Decompresion_Worker(compressedNote, Is_Note) {
           e.data.note.IsLoading = false;
           //
           Is_Note ? data.value.push(e.data.note) : null;
-        // newWorker.terminate();
+          // newWorker.terminate();
           resolve({ Id: e.data.Id, Data: e.data.note });
           e.data.note = null;
         }
