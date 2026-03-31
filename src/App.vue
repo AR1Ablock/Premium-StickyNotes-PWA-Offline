@@ -181,7 +181,7 @@
             <div class="Styling_Btn_Container">
 
               <button ref="HeadingBtn" title="Heading" :class="{ 'Active_btn': isActive('heading') }"
-                @click=" isActive('heading') ? commands.toggleHeading_off() : (Toggle_Heading = !Toggle_Heading, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); editor.$el.firstElementChild.focus();">
+                @click=" isActive('heading') ? commands.toggleHeading_off() : (Toggle_Heading = !Toggle_Heading, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); Tiptap_Editor.commands.focus();">
                 <svg width="32" height="32" viewBox="0 0 32 32">
                   <!-- Rounded black background with gold border -->
                   <rect x="1" y="1" width="30" height="30" rx="6" ry="6" fill="none" stroke="#FFD700"
@@ -219,7 +219,7 @@
             <div class="Styling_Btn_Container">
 
               <button ref="Font_Size_Btn" title="Font Size" :class="{ 'Active_btn': isFontSizeActive }"
-                @click="isFontSizeActive ? commands.unsetFontSize() : (Toggle_Font_Size = !Toggle_Font_Size, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); editor.$el.firstElementChild.focus();">
+                @click="isFontSizeActive ? commands.unsetFontSize() : (Toggle_Font_Size = !Toggle_Font_Size, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); Tiptap_Editor.commands.focus();">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                   style="display: block">
                   <!-- Rounded square container -->
@@ -277,7 +277,7 @@
             <div class="Styling_Btn_Container">
 
               <button ref="Line_Spacing_Btn" title="Line Spacing" :class="{ 'Active_btn': isLineHeightActive }"
-                @click="isLineHeightActive ? commands.unsetLineHeight() : (Toggle_Line_Spacing = !Toggle_Line_Spacing, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); editor.$el.firstElementChild.focus();">
+                @click="isLineHeightActive ? commands.unsetLineHeight() : (Toggle_Line_Spacing = !Toggle_Line_Spacing, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); Tiptap_Editor.commands.focus();">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                   style="display: block">
                   <!-- Rounded square container -->
@@ -398,7 +398,7 @@
             <div class="Styling_Btn_Container">
 
               <button ref="Text_Alignment_Btn" title="Text Alignment" :class="{ 'Active_btn': isTextAlignActive }"
-                @click="isTextAlignActive ? commands.unsetTextAlign() : (Toggle_Text_Alignment = !Toggle_Text_Alignment, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); editor.$el.firstElementChild.focus();">
+                @click="isTextAlignActive ? commands.unsetTextAlign() : (Toggle_Text_Alignment = !Toggle_Text_Alignment, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); Tiptap_Editor.commands.focus();">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                   style="display: block">
                   <!-- Rounded square container -->
@@ -473,7 +473,7 @@
             <div class="Styling_Btn_Container">
 
               <button ref="Link_Btn" title="Link"
-                @click="isActive('link') ? commands.unsetLink() : (Toggle_link = !Toggle_link, Settings_Style_Btns_Drop_Down_Menus($event)); editor.$el.firstElementChild.focus();"
+                @click="isActive('link') ? commands.unsetLink() : (Toggle_link = !Toggle_link, Settings_Style_Btns_Drop_Down_Menus($event)); Tiptap_Editor.commands.focus();"
                 :class="{ Active_btn: isActive('link') }">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                   style="display: block">
@@ -554,7 +554,7 @@
 
             <div class="Styling_Btn_Container">
               <button ref="Font_Color_Btn" title="Font Color"
-                @click="Is_Font_Color_Active ? (Toggle_Font_Color ? Toggle_Font_Color = false : commands.unsetColor()) : (Toggle_Font_Color = !Toggle_Font_Color, Settings_Style_Btns_Drop_Down_Menus($event)); editor.$el.firstElementChild.focus();"
+                @click="Is_Font_Color_Active ? (Toggle_Font_Color ? Toggle_Font_Color = false : commands.unsetColor()) : (Toggle_Font_Color = !Toggle_Font_Color, Settings_Style_Btns_Drop_Down_Menus($event)); Tiptap_Editor.commands.focus();"
                 :class="{ Active_btn: Is_Font_Color_Active }">
                 <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                   <!-- Black background with gold border -->
@@ -598,7 +598,7 @@
 
             <div class="Styling_Btn_Container">
               <button ref="Font_Highlight_Btn" title="Highlight Color"
-                @click="isActive('highlight') ? (Toggle_Highlight_Color ? Toggle_Highlight_Color = false : commands.unsetHighlight()) : (Toggle_Highlight_Color = !Toggle_Highlight_Color, Settings_Style_Btns_Drop_Down_Menus($event)); editor.$el.firstElementChild.focus();"
+                @click="isActive('highlight') ? (Toggle_Highlight_Color ? Toggle_Highlight_Color = false : commands.unsetHighlight()) : (Toggle_Highlight_Color = !Toggle_Highlight_Color, Settings_Style_Btns_Drop_Down_Menus($event)); Tiptap_Editor.commands.focus();"
                 :class="{ Active_btn: isActive('highlight') }">
                 <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                   <!-- Black background with gold border -->
@@ -677,7 +677,7 @@
 
             <div class="Styling_Btn_Container">
               <button ref="Block_BG_Color_Btn" title="Change Block Background Color"
-                @click="Is_Block_Background_Color_Active ? (Toggle_Block_Background_Color ? Toggle_Block_Background_Color = false : commands.toggle_block_bg()) : (Toggle_Block_Background_Color = !Toggle_Block_Background_Color, Settings_Style_Btns_Drop_Down_Menus($event)); editor.$el.firstElementChild.focus();"
+                @click="Is_Block_Background_Color_Active ? (Toggle_Block_Background_Color ? Toggle_Block_Background_Color = false : commands.toggle_block_bg()) : (Toggle_Block_Background_Color = !Toggle_Block_Background_Color, Settings_Style_Btns_Drop_Down_Menus($event)); Tiptap_Editor.commands.focus();"
                 :class="{ Active_btn: Is_Block_Background_Color_Active }">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                   style="display: block">
@@ -751,7 +751,7 @@
             <div class="Styling_Btn_Container">
 
               <button ref="Table_Btn" title="Table"
-                @click="isActive('table') ? (commands.deleteTable(), Toggle_Table = false) : (Toggle_Table = !Toggle_Table, Settings_Style_Btns_Drop_Down_Menus($event)); editor.$el.firstElementChild.focus();"
+                @click="isActive('table') ? (commands.deleteTable(), Toggle_Table = false) : (Toggle_Table = !Toggle_Table, Settings_Style_Btns_Drop_Down_Menus($event)); Tiptap_Editor.commands.focus();"
                 :class="{ Active_btn: isActive('table') }">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                   style="display: block">
@@ -787,7 +787,7 @@
                 <div class="link_input_btns">
                   <button
                     @click="Table_Input.rows > 0 && Table_Input.columns > 0 ? Table_Input.rows <= 50 && Table_Input.columns <= 50 ? (commands.insertTable(Table_Input.rows, Table_Input.columns), Toggle_Table = false) : Show_Create_Edit_Model_Warning('❌ More than 50 rows and columns not allowed.', 2000) : Show_Create_Edit_Model_Warning('❌ Invalid Input.', 2000)">Apply</button>
-                  <button @click="Toggle_Table = false; editor.$el.firstElementChild.focus();">Cancel</button>
+                  <button @click="Toggle_Table = false; Tiptap_Editor.commands.focus();">Cancel</button>
                 </div>
 
 
@@ -796,7 +796,7 @@
             </div>
 
             <button title="Toggle Table Menu" v-if="isActive('table')"
-              @click="Toggle_Table_Menu = true; Toggle_Table_Menu_To_Scroll_Event(); editor.$el.firstElementChild.focus();">
+              @click="Toggle_Table_Menu = true; Toggle_Table_Menu_To_Scroll_Event(); Tiptap_Editor.commands.focus();">
               <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <!-- Container -->
                 <rect x="1" y="1" width="22" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
@@ -1004,7 +1004,7 @@
 
             <div class="Styling_Btn_Container">
               <button ref="Table_Cell_BG_Color_Btn" title="Table Cell Background Color"
-                @click="Is_Table_Cell_Background_Color_Active ? (Toggle_Table_Cell_Background_Color ? Toggle_Table_Cell_Background_Color = false : commands.unsetTableCellBackgroundColor()) : (Toggle_Table_Cell_Background_Color = !Toggle_Table_Cell_Background_Color, Settings_Style_Btns_Drop_Down_Menus($event)); editor.$el.firstElementChild.focus();"
+                @click="Is_Table_Cell_Background_Color_Active ? (Toggle_Table_Cell_Background_Color ? Toggle_Table_Cell_Background_Color = false : commands.unsetTableCellBackgroundColor()) : (Toggle_Table_Cell_Background_Color = !Toggle_Table_Cell_Background_Color, Settings_Style_Btns_Drop_Down_Menus($event)); Tiptap_Editor.commands.focus();"
                 :class="{ Active_btn: Is_Table_Cell_Background_Color_Active }">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 
@@ -1104,7 +1104,7 @@
             </button>
 
             <button title="Toggle Current Cell As Header"
-              @click="commands.toggleHeaderCell(); editor.$el.firstElementChild.focus();">
+              @click="commands.toggleHeaderCell(); Tiptap_Editor.commands.focus();">
               <svg width="32" height="32" viewBox="0 0 24 24">
                 <rect x="1" y="1" width="22" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -1112,7 +1112,7 @@
               </svg>
             </button>
 
-            <button title="Move Row Up" @click="commands.moveTableRowUp(); editor.$el.firstElementChild.focus();">
+            <button title="Move Row Up" @click="commands.moveTableRowUp(); Tiptap_Editor.commands.focus();">
               <svg width="32" height="34" viewBox="0 0 24 27" xmlns="http://www.w3.org/2000/svg">
                 <rect x="1" y="1" width="22" height="25" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -1132,7 +1132,7 @@
               </svg>
             </button>
 
-            <button title="Move Row Down" @click="commands.moveTableRowDown(); editor.$el.firstElementChild.focus();">
+            <button title="Move Row Down" @click="commands.moveTableRowDown(); Tiptap_Editor.commands.focus();">
               <svg width="32" height="34" viewBox="0 0 24 27" xmlns="http://www.w3.org/2000/svg">
                 <rect x="1" y="1" width="22" height="25" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -1154,7 +1154,7 @@
             </button>
 
             <button title="Move Column Left"
-              @click="commands.moveTableColumnLeft(); editor.$el.firstElementChild.focus();">
+              @click="commands.moveTableColumnLeft(); Tiptap_Editor.commands.focus();">
               <svg width="34" height="32" viewBox="0 0 27 24">
                 <rect x="1" y="1" width="25" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -1176,7 +1176,7 @@
             </button>
 
             <button title="Move Column Right"
-              @click="commands.moveTableColumnRight(); editor.$el.firstElementChild.focus();">
+              @click="commands.moveTableColumnRight(); Tiptap_Editor.commands.focus();">
               <svg width="34" height="32" viewBox="0 0 27 24">
                 <rect x="1" y="1" width="25" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -1199,7 +1199,7 @@
 
 
             <button title="Clear Selected Cells Content"
-              @click="commands.clearSelectedTableCells(); editor.$el.firstElementChild.focus();">
+              @click="commands.clearSelectedTableCells(); Tiptap_Editor.commands.focus();">
               <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <!-- Outer container -->
                 <rect x="1" y="1" width="22" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
@@ -1213,7 +1213,7 @@
               </svg>
             </button>
 
-            <button class="close_Mark_Down_Menu" @click="Toggle_Table_Menu = false; Toggle_Table_Menu_To_Scroll_Event(); editor.$el.firstElementChild.focus();
+            <button class="close_Mark_Down_Menu" @click="Toggle_Table_Menu = false; Toggle_Table_Menu_To_Scroll_Event(); Tiptap_Editor.commands.focus();
             " title="Close Table Menu">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                 stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1521,7 +1521,7 @@
 
             <button class="MarkDownMenu" title="Toggle Styling Menu" @click=" Toggle_MarkDown_Menu = !Toggle_MarkDown_Menu;
             Front_Back_Camera = false;
-            editor.$el.firstElementChild.focus();
+            Tiptap_Editor.commands.focus();
             ">
               <svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                 <!-- Black background with gold border -->
@@ -1701,7 +1701,7 @@
             <div class="Styling_Btn_Container">
 
               <button ref="HeadingBtn" title="Heading" :class="{ 'Active_btn': isActive('heading') }"
-                @click=" isActive('heading') ? commands.toggleHeading_off() : (Toggle_Heading = !Toggle_Heading, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); editor.$el.firstElementChild.focus();">
+                @click=" isActive('heading') ? commands.toggleHeading_off() : (Toggle_Heading = !Toggle_Heading, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); Tiptap_Editor.commands.focus();">
                 <svg width="32" height="32" viewBox="0 0 32 32">
                   <!-- Rounded black background with gold border -->
                   <rect x="1" y="1" width="30" height="30" rx="6" ry="6" fill="none" stroke="#FFD700"
@@ -1739,7 +1739,7 @@
             <div class="Styling_Btn_Container">
 
               <button ref="Font_Size_Btn" title="Font Size" :class="{ 'Active_btn': isFontSizeActive }"
-                @click="isFontSizeActive ? commands.unsetFontSize() : (Toggle_Font_Size = !Toggle_Font_Size, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); editor.$el.firstElementChild.focus();">
+                @click="isFontSizeActive ? commands.unsetFontSize() : (Toggle_Font_Size = !Toggle_Font_Size, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); Tiptap_Editor.commands.focus();">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                   style="display: block">
                   <!-- Rounded square container -->
@@ -1797,7 +1797,7 @@
             <div class="Styling_Btn_Container">
 
               <button ref="Line_Spacing_Btn" title="Line Spacing" :class="{ 'Active_btn': isLineHeightActive }"
-                @click="isLineHeightActive ? commands.unsetLineHeight() : (Toggle_Line_Spacing = !Toggle_Line_Spacing, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); editor.$el.firstElementChild.focus();">
+                @click="isLineHeightActive ? commands.unsetLineHeight() : (Toggle_Line_Spacing = !Toggle_Line_Spacing, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); Tiptap_Editor.commands.focus();">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                   style="display: block">
                   <!-- Rounded square container -->
@@ -1918,7 +1918,7 @@
             <div class="Styling_Btn_Container">
 
               <button ref="Text_Alignment_Btn" title="Text Alignment" :class="{ 'Active_btn': isTextAlignActive }"
-                @click="isTextAlignActive ? commands.unsetTextAlign() : (Toggle_Text_Alignment = !Toggle_Text_Alignment, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); editor.$el.firstElementChild.focus();">
+                @click="isTextAlignActive ? commands.unsetTextAlign() : (Toggle_Text_Alignment = !Toggle_Text_Alignment, Settings_Style_Btns_Drop_Down_Menus($event, 'Simple_DropDown')); Tiptap_Editor.commands.focus();">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                   style="display: block">
                   <!-- Rounded square container -->
@@ -1993,7 +1993,7 @@
             <div class="Styling_Btn_Container">
 
               <button ref="Link_Btn" title="Link"
-                @click="isActive('link') ? commands.unsetLink() : (Toggle_link = !Toggle_link, Settings_Style_Btns_Drop_Down_Menus($event)); editor.$el.firstElementChild.focus();"
+                @click="isActive('link') ? commands.unsetLink() : (Toggle_link = !Toggle_link, Settings_Style_Btns_Drop_Down_Menus($event)); Tiptap_Editor.commands.focus();"
                 :class="{ Active_btn: isActive('link') }">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                   style="display: block">
@@ -2074,7 +2074,7 @@
 
             <div class="Styling_Btn_Container">
               <button ref="Font_Color_Btn" title="Font Color"
-                @click="Is_Font_Color_Active ? (Toggle_Font_Color ? Toggle_Font_Color = false : commands.unsetColor()) : (Toggle_Font_Color = !Toggle_Font_Color, Settings_Style_Btns_Drop_Down_Menus($event)); editor.$el.firstElementChild.focus();"
+                @click="Is_Font_Color_Active ? (Toggle_Font_Color ? Toggle_Font_Color = false : commands.unsetColor()) : (Toggle_Font_Color = !Toggle_Font_Color, Settings_Style_Btns_Drop_Down_Menus($event)); Tiptap_Editor.commands.focus();"
                 :class="{ Active_btn: Is_Font_Color_Active }">
                 <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                   <!-- Black background with gold border -->
@@ -2118,7 +2118,7 @@
 
             <div class="Styling_Btn_Container">
               <button ref="Font_Highlight_Btn" title="Highlight Color"
-                @click="isActive('highlight') ? (Toggle_Highlight_Color ? Toggle_Highlight_Color = false : commands.unsetHighlight()) : (Toggle_Highlight_Color = !Toggle_Highlight_Color, Settings_Style_Btns_Drop_Down_Menus($event)); editor.$el.firstElementChild.focus();"
+                @click="isActive('highlight') ? (Toggle_Highlight_Color ? Toggle_Highlight_Color = false : commands.unsetHighlight()) : (Toggle_Highlight_Color = !Toggle_Highlight_Color, Settings_Style_Btns_Drop_Down_Menus($event)); Tiptap_Editor.commands.focus();"
                 :class="{ Active_btn: isActive('highlight') }">
                 <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                   <!-- Black background with gold border -->
@@ -2197,7 +2197,7 @@
 
             <div class="Styling_Btn_Container">
               <button ref="Block_BG_Color_Btn" title="Change Block Background Color"
-                @click="Is_Block_Background_Color_Active ? (Toggle_Block_Background_Color ? Toggle_Block_Background_Color = false : commands.toggle_block_bg()) : (Toggle_Block_Background_Color = !Toggle_Block_Background_Color, Settings_Style_Btns_Drop_Down_Menus($event)); editor.$el.firstElementChild.focus();"
+                @click="Is_Block_Background_Color_Active ? (Toggle_Block_Background_Color ? Toggle_Block_Background_Color = false : commands.toggle_block_bg()) : (Toggle_Block_Background_Color = !Toggle_Block_Background_Color, Settings_Style_Btns_Drop_Down_Menus($event)); Tiptap_Editor.commands.focus();"
                 :class="{ Active_btn: Is_Block_Background_Color_Active }">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                   style="display: block">
@@ -2271,7 +2271,7 @@
             <div class="Styling_Btn_Container">
 
               <button ref="Table_Btn" title="Table"
-                @click="isActive('table') ? (commands.deleteTable(), Toggle_Table = false) : (Toggle_Table = !Toggle_Table, Settings_Style_Btns_Drop_Down_Menus($event)); editor.$el.firstElementChild.focus();"
+                @click="isActive('table') ? (commands.deleteTable(), Toggle_Table = false) : (Toggle_Table = !Toggle_Table, Settings_Style_Btns_Drop_Down_Menus($event)); Tiptap_Editor.commands.focus();"
                 :class="{ Active_btn: isActive('table') }">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                   style="display: block">
@@ -2307,7 +2307,7 @@
                 <div class="link_input_btns">
                   <button
                     @click="Table_Input.rows > 0 && Table_Input.columns > 0 ? Table_Input.rows <= 50 && Table_Input.columns <= 50 ? (commands.insertTable(Table_Input.rows, Table_Input.columns), Toggle_Table = false) : Show_Create_Edit_Model_Warning('❌ More than 50 rows and columns not allowed.', 2000) : Show_Create_Edit_Model_Warning('❌ Invalid Input.', 2000)">Apply</button>
-                  <button @click="Toggle_Table = false; editor.$el.firstElementChild.focus();">Cancel</button>
+                  <button @click="Toggle_Table = false; Tiptap_Editor.commands.focus();">Cancel</button>
                 </div>
 
 
@@ -2316,7 +2316,7 @@
             </div>
 
             <button title="Toggle Table Menu" v-if="isActive('table')"
-              @click="Toggle_Table_Menu = true; Toggle_Table_Menu_To_Scroll_Event(); editor.$el.firstElementChild.focus();">
+              @click="Toggle_Table_Menu = true; Toggle_Table_Menu_To_Scroll_Event(); Tiptap_Editor.commands.focus();">
               <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <!-- Container -->
                 <rect x="1" y="1" width="22" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
@@ -2391,7 +2391,7 @@
 
             <button class="close_Mark_Down_Menu" @click="
               Toggle_MarkDown_Menu = false;
-            editor.$el.firstElementChild.focus();
+            Tiptap_Editor.commands.focus();
             " title="Close MarkUp Menu">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                 stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2524,7 +2524,7 @@
 
             <div class="Styling_Btn_Container">
               <button ref="Table_Cell_BG_Color_Btn" title="Table Cell Background Color"
-                @click="Is_Table_Cell_Background_Color_Active ? (Toggle_Table_Cell_Background_Color ? Toggle_Table_Cell_Background_Color = false : commands.unsetTableCellBackgroundColor()) : (Toggle_Table_Cell_Background_Color = !Toggle_Table_Cell_Background_Color, Settings_Style_Btns_Drop_Down_Menus($event)); editor.$el.firstElementChild.focus();"
+                @click="Is_Table_Cell_Background_Color_Active ? (Toggle_Table_Cell_Background_Color ? Toggle_Table_Cell_Background_Color = false : commands.unsetTableCellBackgroundColor()) : (Toggle_Table_Cell_Background_Color = !Toggle_Table_Cell_Background_Color, Settings_Style_Btns_Drop_Down_Menus($event)); Tiptap_Editor.commands.focus();"
                 :class="{ Active_btn: Is_Table_Cell_Background_Color_Active }">
                 <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 
@@ -2624,7 +2624,7 @@
             </button>
 
             <button title="Toggle Current Cell As Header"
-              @click="commands.toggleHeaderCell(); editor.$el.firstElementChild.focus();">
+              @click="commands.toggleHeaderCell(); Tiptap_Editor.commands.focus();">
               <svg width="32" height="32" viewBox="0 0 24 24">
                 <rect x="1" y="1" width="22" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -2632,7 +2632,7 @@
               </svg>
             </button>
 
-            <button title="Move Row Up" @click="commands.moveTableRowUp(); editor.$el.firstElementChild.focus();">
+            <button title="Move Row Up" @click="commands.moveTableRowUp(); Tiptap_Editor.commands.focus();">
               <svg width="32" height="34" viewBox="0 0 24 27" xmlns="http://www.w3.org/2000/svg">
                 <rect x="1" y="1" width="22" height="25" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -2652,7 +2652,7 @@
               </svg>
             </button>
 
-            <button title="Move Row Down" @click="commands.moveTableRowDown(); editor.$el.firstElementChild.focus();">
+            <button title="Move Row Down" @click="commands.moveTableRowDown(); Tiptap_Editor.commands.focus();">
               <svg width="32" height="34" viewBox="0 0 24 27" xmlns="http://www.w3.org/2000/svg">
                 <rect x="1" y="1" width="22" height="25" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -2674,7 +2674,7 @@
             </button>
 
             <button title="Move Column Left"
-              @click="commands.moveTableColumnLeft(); editor.$el.firstElementChild.focus();">
+              @click="commands.moveTableColumnLeft(); Tiptap_Editor.commands.focus();">
               <svg width="34" height="32" viewBox="0 0 27 24">
                 <rect x="1" y="1" width="25" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -2696,7 +2696,7 @@
             </button>
 
             <button title="Move Column Right"
-              @click="commands.moveTableColumnRight(); editor.$el.firstElementChild.focus();">
+              @click="commands.moveTableColumnRight(); Tiptap_Editor.commands.focus();">
               <svg width="34" height="32" viewBox="0 0 27 24">
                 <rect x="1" y="1" width="25" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -2719,7 +2719,7 @@
 
 
             <button title="Clear Selected Cells Content"
-              @click="commands.clearSelectedTableCells(); editor.$el.firstElementChild.focus();">
+              @click="commands.clearSelectedTableCells(); Tiptap_Editor.commands.focus();">
               <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <!-- Outer container -->
                 <rect x="1" y="1" width="22" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
@@ -2733,7 +2733,7 @@
               </svg>
             </button>
 
-            <button class="close_Mark_Down_Menu" @click="Toggle_Table_Menu = false; Toggle_Table_Menu_To_Scroll_Event(); editor.$el.firstElementChild.focus();
+            <button class="close_Mark_Down_Menu" @click="Toggle_Table_Menu = false; Toggle_Table_Menu_To_Scroll_Event(); Tiptap_Editor.commands.focus();
             " title="Close Table Menu">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                 stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3071,7 +3071,7 @@
             </button>
 
             <button class="MarkDownMenu" title="Toggle Styling Menu" @click=" Toggle_MarkDown_Menu = !Toggle_MarkDown_Menu;
-            editor.$el.firstElementChild.focus();
+            Tiptap_Editor.commands.focus();
             Front_Back_Camera = false;
             ">
               <svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -6367,7 +6367,7 @@ async function manageMedia(
     selectedFile = pasting ? file : file.target.files[0];
 
     if (!selectedFile) {
-      editor.value.$el.firstElementChild.focus();
+      Tiptap_Editor.commands.focus();
       return;
     } // Exit if no file was selected
 
@@ -6496,7 +6496,7 @@ async function manageMedia(
     fileData = null;
     Paste_Procssing.value = false;
     Disable_Done_Btn(false);
-    if (!isTouchFirst.value) editor.value.$el.firstElementChild.focus();
+    if (!isTouchFirst.value) Tiptap_Editor.commands.focus();
   }
 }
 
@@ -6671,7 +6671,7 @@ function AddNoteBtn() {
       }, 400);
     } else {
       setTimeout(() => {
-        editor.value.$el.firstElementChild.focus();
+        Tiptap_Editor.commands.focus();
         document.body.classList.add("disable_body_scroll_on_note_full_screen");
       }, 400);
     }
@@ -7313,7 +7313,7 @@ async function Edit_Mode_Done_Btn() {
       // Capture the index locally
       const currentIndex = CurrentIndex.value;
 
-      data.value[currentIndex].userWroteHtml = Tiptap_Editor.getHTML();
+      data.value[currentIndex].userWroteHtml = Tiptap_Editor.view.dom.innerHTML;
 
       data.value[currentIndex].userWroteJson = Tiptap_Editor.getJSON();
       data.value[currentIndex].title = CurrentlyWritingTitle.value;
@@ -7392,7 +7392,7 @@ async function Edit_Mode_Done_Btn() {
       console.log("27. storage capacity checked");
     } else {
       Show_Create_Edit_Model_Warning("Write Something, Dont Leave It Empty.", 1500);
-      editor.value.$el.firstElementChild.focus();
+      Tiptap_Editor.commands.focus();
       return;
     }
   } catch (error) {
@@ -7463,7 +7463,7 @@ async function Create_Note_Done_Btn() {
       await waitForKeyboardClose(200);
 
     if (
-      editor.value.$el.innerText.trim() !== "" ||
+      editor.value.$el.firstElementChild.innerText.trim() !== "" ||
       CurrentlyWritingTitle.value.trim() !== ""
     ) {
       let currentDate = new Date();
@@ -7472,7 +7472,7 @@ async function Create_Note_Done_Btn() {
       let result = gettingColor.slice(0, -5) + "1.0)";
       // modifying html to mark checkboxes checked state properly.
       /*       let marked_checkbox_html = getHTMLWithCheckedStates(Tiptap_Editor.getHTML()); */
-      let tiptap_html = Tiptap_Editor.getHTML();
+      let tiptap_html = Tiptap_Editor.view.dom.innerHTML;
       let html_with_wrapped_tables = getTableHTMLWithWrapper(tiptap_html);
       //.................................. Object For Array To Make New Cards .................................
 
@@ -7561,7 +7561,7 @@ async function Create_Note_Done_Btn() {
     //..............................Error If It Found Inputs Fields Are Empty .....................................
     else {
       Show_Create_Edit_Model_Warning("Write Something, Dont Leave It Empty.", 1500);
-      editor.value.$el.firstElementChild.focus();
+      Tiptap_Editor.commands.focus();
       return;
     }
   } catch (error) {
@@ -7841,7 +7841,7 @@ async function View_UI_keyboard_Actions(event) {
 
 function editor_title_input_keyboard_Action(event) {
   if (event.key === "Enter") {
-    editor.value.$el.firstElementChild.focus(); // Shift focus to the note input box
+    Tiptap_Editor.commands.focus(); // Shift focus to the note input box
   } else if (event.key == "Enter" && event.ctrlKey) {
     event.preventDefault(); // Prevent default newline behavior
     DoneBtn();
