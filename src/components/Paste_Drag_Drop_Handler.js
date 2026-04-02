@@ -238,7 +238,7 @@ async function HandleHtml(html, manageMedia_method) {
 
 
         /// preserve our some stlyes to these tags.
-        const Dont_apply_some_styles_to_these_tags = ['code', 'pre', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'u', 's'];
+        const Dont_apply_some_styles_to_these_tags = ['code', 'pre', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'th', 'strong', 'em', 'u', 's'];
         /// Remove troublesome elements
         const Tags_To_Remove = ['script', 'noscript', 'style', 'iframe', 'embed', 'object', 'applet', 'canvas', 'form', 'input', 'button', 'select', 'textarea', 'head', 'meta', 'title', 'base', 'html', 'body', 'template', 'marquee', 'blink', 'font', 'center'];
         ///
