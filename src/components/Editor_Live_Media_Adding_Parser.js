@@ -1,5 +1,5 @@
 // Editor_Live_Media_Adding_Parser.js
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { Show_Create_Edit_Model_Warning } from "./TipTap_Editor";
 import { abort_Controller } from "./controller";
 import { debugError } from "./Global_Error_Handler";
@@ -339,7 +339,7 @@ export function Animation_Smoother_For_Edit_And_View_Mode(html) {
 
 
 // Helper function to mimic runAnimation (with optional abort handling if defined elsewhere)
-export async function runAnimation(el) {
+export async function runAnimation(el, openingNoteInViewMode = false) {
     try {
         if (!el) return;
         if (abort_Controller()) await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -444,15 +444,17 @@ export async function runAnimation(el) {
 
 
         console.log("calling animation method");
-        await lazyLoadWithAnimation(el);
+        await lazyLoadWithAnimation(el, openingNoteInViewMode);
     } catch (error) {
         console.log(error.message);
     }
 }
 
+export let Opening_note_In_view_mode_completed = ref(false); // Flag to track if opening note animation in view mode has completed
+
 let timer;
 // Helper function to mimic Lazy_Load_With_animation
-async function lazyLoadWithAnimation(el) {
+async function lazyLoadWithAnimation(el, openingNoteInViewMode = false) {
     try {
         if (abort_Controller()) await new Promise((resolve) => setTimeout(resolve, 1000));
         //
@@ -476,6 +478,7 @@ async function lazyLoadWithAnimation(el) {
             //
             if (abort_Controller()) await new Promise((resolve) => setTimeout(resolve, 1000));
         }
+        if(openingNoteInViewMode) await waitForFlag(Opening_note_In_view_mode_completed); // Wait for the flag to be true before proceeding with the animation
         await new Promise(r => requestAnimationFrame(r));
         //
         el.style.display = 'block';
@@ -510,6 +513,33 @@ async function lazyLoadWithAnimation(el) {
     } catch (error) {
         console.log(error.message);
     }
+}
+
+
+function waitForFlag(flagRef) {
+  return new Promise((resolve) => {
+    // 1. Already true? Resolve immediately
+    if (flagRef.value === true) {
+      console.log('✅ Flag was already true')
+      resolve()
+      return
+    }
+
+    console.log('⏳ Waiting for flag to become true...')
+
+    // 2. Watch for change
+    const stop = watch(
+      flagRef,
+      (newValue) => {
+        if (newValue === true) {
+          console.log('✅ Flag became true → proceeding')
+          stop()           // ← critical: prevent memory leak
+          resolve()
+        }
+      },
+      { immediate: false }   // we already checked initial value
+    )
+  })
 }
 
 

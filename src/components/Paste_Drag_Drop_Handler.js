@@ -513,7 +513,7 @@ function cleanTextNodes(node) {
             node.textContent = node.textContent
                 .replace(/&nbsp;/g, ' ') // Convert nbsp to space
                 .replace(/\u200B|\u200C|\u200D|\uFEFF/g, '') // Remove zero-width spaces
-                .replace(/\s+/g, ' ') // Collapse multiples to single
+                .replace(/[^\S\n\r]+/g, ' ') // remove tabs and multiple spaces but preserve newlines to maintain structure.
                 .trim(); // Trim leading/trailing
             if (node.textContent === '') node.remove(); // Empty text node
         } else {

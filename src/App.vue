@@ -31,11 +31,314 @@
       <h1>Loading Notes...</h1>
     </div>
 
+
+
+    <div>
+
+      <!-- Sidebar -->
+      <div class="nav_bar">
+        <aside id="nxSidebar" class="nx-sidebar" :class="{ show: sidebarOpen }">
+
+          <!-- Logo -->
+          <div class="nx-logo">
+            <div class="nx-logo-box">
+
+              <svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+
+                <!-- Yellow Background -->
+                <rect x="0" y="0" width="256" height="256" rx="48" fill="#F4C430" />
+
+                <!-- Larger White Note -->
+                <rect x="48" y="40" width="160" height="176" rx="22" fill="#F4F1E8" />
+
+                <!-- Left Binding Tabs -->
+                <rect x="40" y="70" width="14" height="12" rx="4" fill="#E2A800" />
+                <rect x="40" y="104" width="14" height="12" rx="4" fill="#E2A800" />
+                <rect x="40" y="138" width="14" height="12" rx="4" fill="#E2A800" />
+                <rect x="40" y="172" width="14" height="12" rx="4" fill="#E2A800" />
+
+                <!-- Text Lines -->
+                <rect x="84" y="80" width="88" height="10" rx="5" fill="#CFCFCF" />
+                <rect x="84" y="108" width="88" height="10" rx="5" fill="#CFCFCF" />
+                <rect x="84" y="136" width="88" height="10" rx="5" fill="#CFCFCF" />
+                <rect x="84" y="164" width="68" height="10" rx="5" fill="#CFCFCF" />
+
+              </svg>
+
+            </div>
+            <div class="nx-logo-text">Sticky Notes</div>
+
+            <!-- Close Button -->
+            <button class="nx-close-btn" @click="closeSidebar">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path d="M15 6l-6 6 6 6" />
+              </svg>
+            </button>
+
+          </div>
+
+          <!-- Menu Section -->
+          <div class="nx-section-title" style="color: #e3b246">Notes Category</div>
+          <div class="nx-menu">
+            <div class="nx-menu-item" :class="{ Selected_item: activeItem === 1 }"
+              @click="activeItem = 1; setFilter('all')">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path d="M3 3h18v6H3V3zm0 8h18v10H3V11z" />
+              </svg>
+              All Notes
+            </div>
+            <div class="nx-menu-item" :class="{ Selected_item: activeItem === 2 }"
+              @click="activeItem = 2; setFilter('favorites')">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path d="M12 17.3l6.2 3.7-1.6-7L22 9.3l-7.2-.6L12 2 9.2 8.7 2 9.3l5.4 4.7-1.6 7z" />
+              </svg>
+              Favorite Notes
+            </div>
+          </div>
+
+          <!-- Workspaces Section -->
+          <div class="nx-section-title">
+            <span>WORKSPACES</span>
+            <button class="add-ws-btn" @click="openNewModal">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Workspace List (Reactive + Fluid) -->
+          <div class="nx-workspace-list">
+            <template v-for="(ws, index) in workspaces" :key="ws.id">
+              <!-- Workspace Row -->
+              <div class="workspace_item" :class="{ Selected_item: activeItem === index + 'ws' }"
+                @click.stop="activeItem = index + 'ws'; setFilter('workspace', ws.id)">
+                <div class="nx-workspace-row" :class="{ expanded: expandedStates[ws.id] }" @click="handleRowClick(ws)">
+                  <div class="nx-workspace-main">
+                    <div class="nx-dot" :style="{ background: ws.color }"></div>
+                    <span class="nx-workspace-name">{{ ws.name }}</span>
+                  </div>
+
+                  <!-- Expand Arrow (only if subgroups exist) -->
+                  <span v-if="ws.subgroups?.length > 0" class="expand-arrow" @click.stop="toggleExpanded(ws.id)">
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </span>
+
+                  <!-- Actions / Confirmation -->
+                  <div class="ws-actions">
+                    <template v-if="confirmingId === ws.id">
+                      <!-- Two-step delete confirmation (exact original behaviour) -->
+                      <div class="confirm-actions">
+                        <button class="confirm-btn cancel" title="Cancel" @click.stop="cancelConfirm">
+                          ✕
+                        </button>
+                        <button class="confirm-btn confirm" title="Delete" @click.stop="confirmDelete">
+                          ✓
+                        </button>
+                      </div>
+                    </template>
+                    <template v-else>
+                      <button class="ws-action-btn edit-ws" title="Edit" @click.stop="openEditModal(ws)">
+                        <svg viewBox="0 0 24 24" width="18" height="18">
+                          <path
+                            d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                        </svg>
+                      </button>
+                      <button class="ws-action-btn delete-ws" title="Delete" @click.stop="startDelete(ws.id)">
+                        <svg viewBox="0 0 24 24" width="18" height="18">
+                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                        </svg>
+                      </button>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- Nested Subgroups (smooth expand/collapse via CSS + Vue reactivity) -->
+                <div v-if="ws.subgroups?.length > 0" class="subgroup-nested" :class="{ show: expandedStates[ws.id] }">
+                  <div v-for="(sub, Sub_idx) in ws.subgroups" :key="Sub_idx"
+                    :class="{ Selected_item: activeItem === Sub_idx + 'sg' }"
+                    @click.stop="activeItem = Sub_idx + 'sg'; setFilter('subgroup', ws.id, sub.name)"
+                    class="subgroup-item-nested">
+                    {{ sub.name?.length > 20 ? sub.name.substring(0, 20) + '...' : sub.name }}
+                  </div>
+                </div>
+              </div>
+
+
+
+            </template>
+          </div>
+
+          <!-- Storage Section (static as original) -->
+          <div class="nx-storage">
+            <div class="nx-capacity">
+              <div class="nx-progress-ring">
+                <svg viewBox="0 0 48 48" width="60" height="60">
+                  <circle class="nx-progress-bg" cx="24" cy="24" r="22"></circle>
+                  <circle class="nx-progress-bar" cx="24" cy="24" r="22" :stroke-dasharray="circumference"
+                    :stroke-dashoffset="dashOffset"></circle>
+                </svg>
+                <div class="nx-progress-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22">
+                    <path d="M4 6h16v4H4V6zm0 6h16v6H4v-6z" />
+                  </svg>
+                </div>
+              </div>
+              <div class="nx-capacity-text">
+                <div class="nx-capacity-label">CAPACITY</div>
+                <div class="storage_cap_text">{{ Used_Storage_Capacity }} / {{ Total_Storage_Capacity }}</div>
+              </div>
+            </div>
+
+          </div>
+        </aside>
+        <!-- Modal Overlay to close it -->
+        <div class="nav_bar_overlay" :class="{ show: sidebarOpen }" @click="closeSidebar"></div>
+      </div>
+
+
+      <!-- Modal (with preserved scale + fade animation) -->
+      <div class="modal-overlay" :class="{ show: showModal }" @click.self="closeModal">
+        <div class="modal-card">
+          <h2>{{ modalTitle }}</h2>
+
+          <!-- Workspace Name -->
+          <div class="field">
+            <input v-model="wsName" type="text" placeholder="Name"
+              @keyup.enter="$event.target.closest('.modal-card').querySelectorAll('input')[1]?.focus()" />
+          </div>
+
+          <!-- Color Palette -->
+          <div class="field">
+            <label>IDENTITY COLOR</label>
+            <div class="color-row">
+              <div v-for="c in colorOptions" :key="c.code" class="color-swatch" :style="{ backgroundColor: c.code }"
+                :class="{ selected: selectedColor === c.code }" @click="selectedColor = c.code"></div>
+            </div>
+            <div class="selected-indicator">
+              Selected: {{ selectedColorName }}
+            </div>
+          </div>
+
+          <!-- Sub-groups -->
+          <div class="add-subgroup-row">
+            <input v-model="newSubgroup" type="text" placeholder="Sub-Group Name (Optional)"
+              @keyup.enter="addTempSubgroup" />
+            <button class="add-btn" @click="addTempSubgroup">
+              Add
+            </button>
+          </div>
+
+          <!-- Subgroup List (reactive) -->
+          <div class="subgroup-scroll-container">
+            <div v-if="!tempSubgroups.length" style="color: #7e91a8; padding: 8px; font-style: italic">
+              No sub-groups
+            </div>
+            <div v-else v-for="(sg_obj, idx) in tempSubgroups" :key="idx">
+              <div v-if="Delete_Select != idx && !sg_obj.soft_deletion" class="subgroup-item">
+                <span class="subgroup-name">{{ sg_obj.name }}</span>
+                <button class="remove-subgroup" @click="removeSubgroup(idx)">
+                  ×
+                </button>
+              </div>
+
+              <div class="subgroup-item sub_group_deletion_container"
+                v-if="Delete_Select === idx && !sg_obj.soft_deletion">
+                <button class="sbo" @click="remove_only_Subgroup('soft')">
+                  <strong>This Group</strong>
+                </button>
+
+                <button v-if="Editing_Workspace" class="sbn" @click="remove_only_Subgroup('hard')">
+                  <strong>Group + Notes</strong>
+                </button>
+
+                <button class="sb_cancel" @click="Cancel_Delete_Subgroup">
+                  Cancel
+                </button>
+              </div>
+
+              <div v-if="sg_obj.soft_deletion" :class="{ subgroup_item_hard_deletion: sg_obj.hard_deletion }"
+                class="subgroup-item">
+                <span class="removing_striked_subgroup subgroup-name">{{ sg_obj.name }}</span>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-row">
+            <button class="btn-secondary" @click="closeModal">
+              Cancel
+            </button>
+            <button class="btn-primary" @click="saveWorkspace">
+              {{ editingWorkspaceId ? 'Save Changes' : 'Create Workspace' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Workspace Deletion Confirmation Modal -->
+
+    <div id="demo-modal" class="modal-overlay" :class="{ show: Toggle_WorkSpace_Delete_Confirmation }"
+      @click.self="Cancel_WorkSpace_Deletion">
+      <div class="modal" :class="{ show: Toggle_WorkSpace_Delete_Confirmation }">
+
+        <!-- Header -->
+        <div class="modal-header">
+          <div class="modal-title">Delete Workspace</div>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body">
+          <div class="warning-text">
+            Delete <strong>"WS"</strong>?
+          </div>
+
+          <div class="info-box">
+            <div class="info-item">
+              <span class="info-label">Subgroups</span>
+              <span class="info-value">{{ Total_Sub_Groups_To_Be_Deleted }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Linked Notes</span>
+              <span class="info-value">{{ Total_Linked_Notes_To_Be_Deleted }}</span>
+            </div>
+          </div>
+
+          <p style="font-size: 14px; color: #aaa; line-height: 1.4;">
+            This action cannot be undone. All notes and subgroups inside this workspace will be affected.
+          </p>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="modal-footer">
+          <button class="ws-btn ws-btn-cancel" @click="Cancel_WorkSpace_Deletion">Cancel</button>
+          <button class="ws-btn ws-btn-workspace" @click="Delete_WorkSpace_And_Associated_Notes('soft')">This
+            Workspace</button>
+          <button class="ws-btn ws-btn-destructive" @click="Delete_WorkSpace_And_Associated_Notes('hard')">Workspace +
+            Notes</button>
+        </div>
+
+      </div>
+    </div>
+
+
+
+
     <!-- Header -->
     <div class="Top_Container" :style="isAddBtnPressed || IsRoViewNoteOpen ? { borderBottom: '2px solid #e3b23c30' } : {}
       ">
       <div class="searchbar" :class="{ active: Blur_Background_WhileOpening_Note }">
-        <h1>Sticky Notes</h1>
+        <!-- Open Sidebar Button -->
+        <button id="nxOpenBtn" class="nx-open-btn" @click="openSidebar">
+          <svg viewBox="0 0 24 24" width="22" height="22">
+            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
+          </svg>
+        </button>
+
         <div class="search-container">
           <input name="Search_Bar" type="text" placeholder="Search notes..." class="searchinput showinput"
             ref="SearchInput_Element" v-model.trim="inputData" @input="Making_Debounce" @keydown.enter.prevent />
@@ -44,7 +347,8 @@
               d="M21.71 20.29l-3.388-3.388a8.063 8.063 0 10-1.414 1.414l3.388 3.388a1 1 0 001.414-1.414zM10 16a6 6 0 110-12 6 6 0 010 12z" />
           </svg>
         </div>
-        <button class="btn addbtn" @click="AddNoteBtn" title="Add Note" :disabled="deleteTimeouts.size">
+        <button class="btn addbtn" @click="Create_Edit_Note_By_WorkSpace(null, false)" title="Add Note"
+          :disabled="deleteTimeouts.size">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" fill="none" />
@@ -55,34 +359,58 @@
       </div>
     </div>
 
-    <!-- Empty message (hidden when data > 0) -->
-    <div class="empty_card_container" v-if="data.length > 0" style="display : none;"
-      ref="No_Notes_Found_Message_Element">
+    <!-- No notes when we do search or filter and we have notes in array -->
+    <div class="empty_card_container" v-if="data.length > 0" :class="{ show: Is_No_Notes_Found_Message }">
       <p class="empty_card_container_message">No Notes Found</p>
     </div>
 
-    <draggable @change="onDraggableChange" v-model="data" item-key="id" class="card_con"
+    <!-- when we don't have any notes in array -->
+    <div class="empty_card_container show" v-if="data.length <= 0">
+      <p class="empty_card_container_message">No Notes Available</p>
+    </div>
+
+    <draggable @change="onDraggableChange" v-model="visibleNotes" item-key="id" class="card_con"
       :class="[{ active: Blur_Background_WhileOpening_Note }, { Screen_load_animation_end: Loading_screen_end_then_animate_notes_card_con }]">
       <!-- Cards --> <template #item="{ element, index }">
         <div class="card_wrapper" :key="element.id || index" :data-id="element.id">
-          <div :style="{ 'background-color': data[index].Card_Para_Color }" class="cards"
+          <div :style="{ 'background-color': element.Card_Para_Color }" class="cards"
             :ref="el => { if (el) Card.push(el) }" :key="element.id + sort_order"
-            :class="[{ smoothhide: data[index].isCardGoingDeleted }, { disable_Card_While_Saving: data[index].IsLoading }]"
+            :class="[{ smoothhide: element.isCardGoingDeleted }, { disable_Card_While_Saving: element.IsLoading }]"
             :data-id="index">
             <div class="Title_Con">
               <p class="Card_Title"> {{ getShortText((element.title != null && element.title != undefined) ?
                 element.title.length > 18 ? element.title.substring(0, 18) : element.title ?? "" : "", true) }} </p>
             </div>
-            <div class="Para_Con" @click="RO_ViewNotePage(index)">
+            <div class="Para_Con" @click="RO_ViewNotePage(element.id)">
               <p class="Card_Para" ref="Each_Note_Preview" v-html="getShortText(element.userWroteHtml, false)"></p>
             </div>
-            <div class="Upload_Loader Upload_Loader_active" v-show="data[index].IsLoading"></div>
+            <div class="Upload_Loader Upload_Loader_active" v-show="element.IsLoading"></div>
             <div class="extra">
               <div class="card_footer">
                 <h4>{{ element.NotesDate }}</h4>
 
-                <div class="notes_card_footer_btn_container"> <button class="edit" @click="EditBtn(index)"
-                    title="Edit Note">
+                <button class="fav-btn" @click="toggleFavorite(element)" title="Toggle Favorite">
+
+                  <!-- Filled star when active -->
+                  <svg v-if="element.isFav" viewBox="0 0 24 24" width="24" height="24" fill="gold">
+                    <path d="M12 17.27L18.18 21l-1.64-7.03
+               L22 9.24l-7.19-.61L12 2
+               9.19 8.63 2 9.24l5.46 4.73
+               L5.82 21z" />
+                  </svg>
+
+                  <!-- Outlined star when inactive -->
+                  <svg v-else viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="black">
+                    <path d="M12 17.27L18.18 21l-1.64-7.03
+               L22 9.24l-7.19-.61L12 2
+               9.19 8.63 2 9.24l5.46 4.73
+               L5.82 21z" />
+                  </svg>
+
+                </button>
+
+                <div class="notes_card_footer_btn_container">
+                  <button class="edit" @click="Create_Edit_Note_By_WorkSpace(element.id, true)" title="Edit Note">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
@@ -104,8 +432,7 @@
               </div>
             </div>
           </div>
-          <div :class="{ smoothhide: !data[index].isCardGoingDeleted }" class="note undo-card"
-            style="--undo-duration: 5s">
+          <div :class="{ smoothhide: !element.isCardGoingDeleted }" class="note undo-card" style="--undo-duration: 5s">
             <div class="undo-content"> <span class="undo-icon">🗑️</span> <span class="undo-text">Note deleted</span>
               <div class="undo-progress">
                 <div class="undo-progress-bar"></div>
@@ -121,6 +448,65 @@
       <p class="empty_card_container_message">No Notes Available</p>
     </div>
 
+
+
+
+    <!-- WORKSPACE SELECTOR MODAL (lightweight & beautiful) -->
+    <div class="modal-overlay" :class="{ show: showWorkspaceSelector }" @click.self="cancelWorkspaceSelection">
+      <div class="workspace-selector-card" :class="{ show: showWorkspaceSelector }">
+        <h2 class="selector-title">Choose Workspace</h2>
+        <p class="selector-subtitle">Where should this note be saved?</p>
+
+        <!-- Workspace List -->
+        <div class="workspace-select-list">
+          <!-- No Workspace Option -->
+          <div class="workspace-select-item" :class="{ selected: tempSelectedWorkspaceId === null }"
+            @click="tempSelectedWorkspaceId = null">
+            <div class="no-ws-dot"></div>
+            <span class="ws-name">No Workspace</span>
+          </div>
+
+          <!-- Real Workspaces -->
+          <div v-for="ws in workspaces" :key="ws.id" class="workspace-select-item"
+            :class="{ selected: tempSelectedWorkspaceId === ws.id }" @click="selectWorkspaceTemp(ws.id)">
+            <div class="ws-dot" :style="{ background: ws.color }"></div>
+            <span class="ws-name scroller">{{ ws.name }}</span>
+            <span v-if="ws.subgroups?.length" class="sub-count">
+              {{ ws.subgroups.length }} subgroup{{ ws.subgroups.length > 1 ? 's' : '' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Subgroup (appears only when workspace selected) -->
+        <Transition name="sub-fade">
+          <div v-if="tempSelectedWorkspaceId" class="subgroup-section">
+            <label class="modal-label">Sub-Group <span class="optional">(optional)</span></label>
+            <div class="subgroup-pills scroller">
+              <div class="sub-pill" :class="{ active: tempSelectedSubgroup === null }"
+                @click="tempSelectedSubgroup = null">
+                None
+              </div>
+              <div v-for="(sub, index) in tempCurrentSubgroups" :key="index" class="sub-pill scroller"
+                :class="{ active: tempSelectedSubgroup === sub.name }" @click="tempSelectedSubgroup = sub.name">
+                {{ sub.name }}
+              </div>
+            </div>
+          </div>
+        </Transition>
+
+        <!-- Footer Buttons -->
+        <div class="selector-actions">
+          <button class="btn-secondary" @click="cancelWorkspaceSelection">Cancel</button>
+          <button class="btn-primary" @click="confirmWorkspaceSelection">
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+
+
     <!--       @click.self="CloseBtn(null, 'note_making', null)" -->
     <div class="create_edit_model_container" :class="{ active: isAddBtnPressed }">
       <!-- Mobile View Editor Create Edit UI-->
@@ -128,7 +514,7 @@
         <div class="create_edit_model_header create_edit_model_header_mobile_view">
 
           <div class="editor_top_element_1st_row_wrapper">
-            <button ref="Note_Createt_Close_btn" @click="CloseBtn('note_making')" class="btn close_note_create_edit_btn"
+            <button ref="Note_Create_Close_btn" @click="CloseBtn('note_making')" class="btn close_note_create_edit_btn"
               title="Close">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1153,8 +1539,7 @@
               </svg>
             </button>
 
-            <button title="Move Column Left"
-              @click="commands.moveTableColumnLeft(); Tiptap_Editor.commands.focus();">
+            <button title="Move Column Left" @click="commands.moveTableColumnLeft(); Tiptap_Editor.commands.focus();">
               <svg width="34" height="32" viewBox="0 0 27 24">
                 <rect x="1" y="1" width="25" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -1175,8 +1560,7 @@
               </svg>
             </button>
 
-            <button title="Move Column Right"
-              @click="commands.moveTableColumnRight(); Tiptap_Editor.commands.focus();">
+            <button title="Move Column Right" @click="commands.moveTableColumnRight(); Tiptap_Editor.commands.focus();">
               <svg width="34" height="32" viewBox="0 0 27 24">
                 <rect x="1" y="1" width="25" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -2673,8 +3057,7 @@
               </svg>
             </button>
 
-            <button title="Move Column Left"
-              @click="commands.moveTableColumnLeft(); Tiptap_Editor.commands.focus();">
+            <button title="Move Column Left" @click="commands.moveTableColumnLeft(); Tiptap_Editor.commands.focus();">
               <svg width="34" height="32" viewBox="0 0 27 24">
                 <rect x="1" y="1" width="25" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -2695,8 +3078,7 @@
               </svg>
             </button>
 
-            <button title="Move Column Right"
-              @click="commands.moveTableColumnRight(); Tiptap_Editor.commands.focus();">
+            <button title="Move Column Right" @click="commands.moveTableColumnRight(); Tiptap_Editor.commands.focus();">
               <svg width="34" height="32" viewBox="0 0 27 24">
                 <rect x="1" y="1" width="25" height="22" rx="4" fill="none" stroke="#FFD700" stroke-width="2" />
 
@@ -3258,7 +3640,7 @@
           </div>
 
           <div class="edit_create_done_close_btn">
-            <button ref="Note_Createt_Close_btn" @click="CloseBtn('note_making')" class="btn close_note_create_edit_btn"
+            <button ref="Note_Create_Close_btn" @click="CloseBtn('note_making')" class="btn close_note_create_edit_btn"
               title="Close">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3783,7 +4165,7 @@
 import draggable from 'vuedraggable'
 //
 //
-import { ref, toRaw, onMounted, onUnmounted, computed, onBeforeUnmount, nextTick, reactive } from "vue";
+import { ref, toRaw, onMounted, onUnmounted, computed, onBeforeUnmount, nextTick, reactive, watch, defineAsyncComponent } from "vue";
 
 //
 import validator from 'validator';
@@ -3794,6 +4176,7 @@ import {
   runAnimation,
   Animation_Smoother_For_Edit_And_View_Mode,
   Clear_Editor_KeyPress_Media_Selection,
+  Opening_note_In_view_mode_completed,
 } from "./components/Editor_Live_Media_Adding_Parser";
 
 import { cleanupMediaListeners } from './components/Media_Custom_Tiptap_Node/Media_Node_View'
@@ -3872,12 +4255,12 @@ const { isTouchFirst } = useTouchDetection();
 let data = ref([]);
 ////
 let isAddBtnPressed = ref(false);
-let Note_Createt_Close_btn = ref();
+let Note_Create_Close_btn = ref();
 let DisableDoneBtnElement = ref();
 let CurrentIndex = ref();
 let SendNoteForView_Title = ref("");
 let SendNoteForView_Message = ref("");
-let No_Notes_Found_Message_Element = ref();
+let Is_No_Notes_Found_Message = ref(false);
 let Card = ref([]);
 let Note_View_UI_Text_Element = ref();
 let Note_heading_element = ref();
@@ -3918,6 +4301,9 @@ let Note_Object = {
   Card_Footer_Color: "",
   Attachment_Used_Size: null,
   TimeStamp: null,
+  isFav: false,
+  WorkSpaceId: null,
+  SubGroupId: null,
 };
 
 
@@ -4034,6 +4420,8 @@ const db = new Dexie("MyNotesDB");
 db.version(1).stores({
   notes: "id, note, createdAt, updatedAt",
   media: "id, blob, createdAt, updatedAt",
+  favorites: "id",
+  workSpaces: "id",
 });
 const refreshKey = ref(new Date().toISOString());
 
@@ -4113,6 +4501,511 @@ const scheduleClose = useToggleTimer();
 //////////////////////////////////////////////////////////////////////////////////////////
 // ALL Methods
 //////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+// ==================== FILTER STATE ====================
+const activeFilter = ref({
+  type: 'all',           // 'all' | 'favorites' | 'workspace' | 'subgroup'
+  workspaceId: null,
+  subgroup: null
+});
+
+
+// Writable computed - this is what vuedraggable will use
+const visibleNotes = computed({
+  get() {
+    const f = activeFilter.value
+    return data.value.filter(note => {
+      if (f.type === 'all') return true
+      if (f.type === 'favorites') return !!note.isFav
+      if (f.type === 'workspace') return note.WorkSpaceId === f.workspaceId
+      if (f.type === 'subgroup') {
+        return note.WorkSpaceId === f.workspaceId && note.SubGroupId === f.subgroup
+      }
+      return true
+    })
+  },
+
+  // This runs when user drags → we reorder the real `notes` array
+  set(newOrderedList) {
+    const orderMap = new Map(newOrderedList.map((note, i) => [note.id, i]))
+
+    data.value = data.value
+      .slice()                                   // copy
+      .sort((a, b) => {
+        const posA = orderMap.get(a.id) ?? 9999
+        const posB = orderMap.get(b.id) ?? 9999
+        return posA - posB
+      })
+  }
+});
+
+
+watch(visibleNotes, (newList) => {
+  Is_No_Notes_Found_Message.value = newList.length === 0
+}, { immediate: true })   // immediate: true so it runs on first load too
+
+
+
+const setFilter = (type, workspaceId = null, subgroup = null) => {
+  activeFilter.value = { type, workspaceId, subgroup }
+  Cancel_WorkSpace_Deletion();
+  closeModal();
+  if (!workspaceId && !subgroup && window.innerWidth <= 500) closeSidebar();
+}
+
+
+const workspaces = ref([])
+
+const activeItem = ref(1);
+
+
+const loadFromStorage = async () => {
+  const allWS = await db.workSpaces.toArray();
+  if (allWS.length > 0) {
+    try {
+      workspaces.value = allWS;
+    } catch (e) {
+      workspaces.value = [];
+      console.log('Error while fetching workspace from storage on load', e);
+
+    }
+  }
+}
+
+
+// 🔄 Toggle favorite
+async function toggleFavorite(note) {
+  try {
+    let noteId = note.id;
+    await db.transaction("rw", db.favorites, async () => {
+      const fav = await db.favorites.get(noteId);
+      if (fav) {
+        note.isFav = false;
+        await db.favorites.delete(noteId);
+      } else {
+        note.isFav = true;
+        await db.favorites.put({ id: noteId });
+      }
+    });
+    return true; // success
+  } catch (err) {
+    console.error("Toggle favorite failed:", err);
+    return false;
+  }
+}
+
+
+
+
+/* =============================================
+   STATE (Composition API - latest Vue 3 pattern)
+   ============================================= */
+const sidebarOpen = ref(false)
+
+const showModal = ref(false)
+const modalTitle = ref('New Workspace')
+const editingWorkspaceId = ref(null)
+const wsName = ref('')
+const selectedColor = ref('#4B3B60')
+const tempSubgroups = ref([])
+const newSubgroup = ref('')
+const confirmingId = ref(null) // For two-step delete confirmation
+const expandedStates = reactive({})
+
+/* Color palette (exact original) */
+const colorOptions = [
+  { name: 'Coral', code: '#FF6B6B' },
+  { name: 'Lavender', code: '#B185DB' },
+  { name: 'Sky', code: '#4D9DE0' },
+  { name: 'Mint', code: '#3BB273' },
+  { name: 'Amber', code: '#F9A03F' },
+  { name: 'Rose', code: '#E84855' },
+  { name: 'Indigo', code: '#4B3B60' },
+  { name: 'Teal', code: '#1F7A8C' }
+]
+
+/* Computed for selected color label (reactive, no manual DOM updates) */
+const selectedColorName = computed(() => {
+  const found = colorOptions.find(opt => opt.code === selectedColor.value)
+  return found ? found.name : ''
+})
+
+/* =============================================
+   LIFECYCLE & STORAGE
+   ============================================= */
+onMounted(() => {
+  loadFromStorage();
+})
+
+/* =============================================
+   SIDEBAR CONTROLS (fluid slide animation preserved)
+   ============================================= */
+const openSidebar = () => {
+  sidebarOpen.value = true
+}
+
+const closeSidebar = () => {
+  sidebarOpen.value = false
+}
+
+/* =============================================
+   MODAL CONTROLS (scale + fade preserved + reactive)
+   ============================================= */
+const openNewModal = async () => {
+  try {
+    editingWorkspaceId.value = null
+    modalTitle.value = 'New Workspace'
+    wsName.value = ''
+    selectedColor.value = '#4B3B60'
+    tempSubgroups.value = []
+    newSubgroup.value = ''
+    Cancel_WorkSpace_Deletion();
+
+    if (window.innerWidth <= 1100) closeSidebar(); // auto-close sidebar on mobile when opening modal
+    await new Promise(resolve => setTimeout(resolve, 100));
+    showModal.value = true
+  }
+  catch (e) {
+    console.error('Error opening new workspace modal:', e);
+    alert('Failed to open new workSpace modal. Please try again.');
+  }
+}
+
+
+let Editing_Workspace = ref(false);
+
+const openEditModal = async (ws) => {
+  try {
+    editingWorkspaceId.value = ws.id
+    modalTitle.value = 'Edit Workspace'
+    wsName.value = ws.name
+    selectedColor.value = ws.color
+    tempSubgroups.value = [...(ws.subgroups || [])]
+    newSubgroup.value = ''
+    Cancel_WorkSpace_Deletion();
+
+    if (window.innerWidth <= 1100) closeSidebar(); // auto-close sidebar on mobile when opening modal
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    Editing_Workspace.value = true;
+    showModal.value = true
+  } catch (e) {
+    console.error('Error opening edit modal:', e);
+    alert('Failed to open workSpace edit modal. Please try again.');
+  }
+}
+
+const closeModal = () => {
+  Delete_Select.value = null;
+  if (Sub_Group_Collection_For_Deletion.value && Sub_Group_Collection_For_Deletion.value.length > 0) {
+    for (const sg_obj of Sub_Group_Collection_For_Deletion.value) {
+      const obj = tempSubgroups.value[sg_obj.deletion_index];
+      obj.soft_deletion = false;
+      obj.hard_deletion = false;
+    }
+  }
+  Sub_Group_Collection_For_Deletion.value = [];
+  Editing_Workspace.value = false;
+  showModal.value = false;
+}
+
+
+async function saveWorkspace() {
+  try {
+    const name = wsName.value.trim()
+    let ws;
+    if (!name) {
+      alert('Workspace name required')
+      return
+    }
+
+    // sort deletion collection by index descending
+    if (Sub_Group_Collection_For_Deletion.value && Sub_Group_Collection_For_Deletion.value.length > 0) {
+      const deletions = [...Sub_Group_Collection_For_Deletion.value]
+        .sort((a, b) => b.deletion_index - a.deletion_index)
+
+      for (const sg_obj of deletions) {
+        if (sg_obj.op === "hard_group_only") {
+          const obj = tempSubgroups.value[sg_obj.deletion_index]
+
+          // delete notes belonging to this subgroup
+          for (const note of [...data.value]) {
+            if (note.SubGroupId === obj.name) {
+              const idx = data.value.findIndex(n => n.id === note.id)
+              if (idx !== -1) {
+                await DeleteNote(note.id)
+                data.value.splice(idx, 1)
+              }
+            }
+          }
+
+        }
+        // safe because we’re going backwards
+        tempSubgroups.value.splice(sg_obj.deletion_index, 1)
+      }
+      Sub_Group_Collection_For_Deletion.value = [];
+    }
+
+
+    if (editingWorkspaceId.value) {
+      // Edit existing
+      ws = workspaces.value.find(w => w.id === editingWorkspaceId.value)
+      if (ws) {
+        ws.name = name
+        ws.color = selectedColor.value
+        ws.subgroups = tempSubgroups.value.map(sub => toRaw(sub))
+      }
+    } else {
+      // Create new
+      ws = {
+        id: 'ws_' + Date.now(),
+        name,
+        color: selectedColor.value,
+        subgroups: tempSubgroups.value.map(sub => toRaw(sub))
+      }
+    }
+    if (ws) {
+      const idx = workspaces.value.findIndex(w => w.id === ws.id);
+      if (idx !== -1) {
+        // replace existing
+        workspaces.value[idx] = ws;
+      } else {
+        workspaces.value.push(ws);
+      }
+      await db.workSpaces.put(toRaw(ws));
+    }
+    closeModal();
+  } catch (e) {
+    console.error('Error saving workspace:', e);
+    alert('Failed to save workspace. Please try again.');
+  }
+}
+
+/* =============================================
+   SUB-GROUP HANDLERS when making new workspace item and add groups in it.
+   ============================================= */
+const addTempSubgroup = () => {
+  try {
+    const val = newSubgroup.value.trim()
+    if (!val) {
+      alert('Enter subgroup name')
+      return
+    }
+    tempSubgroups.value.push({ "name": val, "soft_deletion": false, "hard_deletion": false });
+    newSubgroup.value = ''
+  }
+  catch (e) {
+    console.error('Error adding subgroup:', e);
+    alert('Failed to add subgroup. Please try again.');
+  }
+}
+
+let Delete_Select = ref(null);
+let Sub_Group_Collection_For_Deletion = ref([]);
+
+const removeSubgroup = (idx) => {
+  Delete_Select.value = idx;
+  /* tempSubgroups.value.splice(idx, 1) */
+}
+
+function remove_only_Subgroup(sg_deletion) {
+  let sg_obj = tempSubgroups.value[Delete_Select.value];
+  if (sg_deletion === "soft") {
+    sg_obj.soft_deletion = true;
+    sg_obj.hard_deletion = false;
+  }
+  else {
+    sg_obj.soft_deletion = true;
+    sg_obj.hard_deletion = true;
+  }
+  Sub_Group_Collection_For_Deletion.value.push({ "deletion_index": Delete_Select.value, "op": `${sg_deletion}_group_only` });
+}
+
+function Cancel_Delete_Subgroup() {
+  Delete_Select.value = null;
+}
+
+/* =============================================
+   WORKSPACE LIST HELPERS (performance-optimized)
+   ============================================= */
+const toggleExpanded = (id) => {
+  // Toggle boolean (undefined → true, true → false, false → true)
+  expandedStates[id] = !expandedStates[id]
+}
+
+const handleRowClick = (ws) => {
+  if (ws.subgroups?.length > 0) {
+    toggleExpanded(ws.id)
+  }
+}
+
+/* =============================================
+   DELETE WITH TWO-STEP CONFIRMATION (exact original UX)
+   ============================================= */
+const startDelete = (wsId) => {
+  confirmingId.value = wsId;
+  closeModal();
+}
+
+const cancelConfirm = () => {
+  confirmingId.value = null;
+}
+
+let Toggle_WorkSpace_Delete_Confirmation = ref(false);
+
+
+
+let Total_Sub_Groups_To_Be_Deleted = ref(0);
+let Total_Linked_Notes_To_Be_Deleted = ref(0);
+
+
+const confirmDelete = async () => {
+  try {
+    if (!confirmingId.value) return
+
+    if (window.innerWidth <= 1000) {
+      closeSidebar();
+    }
+
+    Toggle_WorkSpace_Delete_Confirmation.value = true;
+
+    const index = workspaces.value.findIndex(w => w.id === confirmingId.value)
+    if (index !== -1) {
+      const wsId = workspaces.value[index].id;
+      // count total number of sub groups and linked notes to WS and its sub groups for progress bar in deletion confirmation modal
+      Total_Sub_Groups_To_Be_Deleted.value = workspaces.value[index].subgroups ? workspaces.value[index].subgroups.length : 0;
+      Total_Linked_Notes_To_Be_Deleted.value = data.value.filter(note => note.WorkSpaceId === wsId).length;
+    }
+  }
+  catch (e) {
+    console.error('Error during workspace deletion:', e);
+    alert('Failed to delete workspace. Please try again.');
+  }
+}
+
+
+
+function Cancel_WorkSpace_Deletion() {
+  Toggle_WorkSpace_Delete_Confirmation.value = false;
+  confirmingId.value = null;
+}
+
+
+
+
+async function Delete_WorkSpace_And_Associated_Notes(deletion) {
+  try {
+    const index = workspaces.value.findIndex(w => w.id === confirmingId.value)
+    if (index !== -1) {
+
+      // Delete associated notes
+      if (deletion === "hard") {
+        for (const note of data.value) {
+          if (note.WorkSpaceId === confirmingId.value) {
+            await DeleteNote(note.id)
+          }
+        }
+        data.value = data.value.filter(n => n.WorkSpaceId !== confirmingId.value)
+      }
+
+
+      // Delete workspace
+      workspaces.value.splice(index, 1);
+      await db.workSpaces.delete(confirmingId.value);
+    }
+    Total_Sub_Groups_To_Be_Deleted.value = 0;
+    Total_Linked_Notes_To_Be_Deleted.value = 0;
+    confirmingId.value = null;
+    Toggle_WorkSpace_Delete_Confirmation.value = false;
+  } catch (e) {
+    console.error('Error deleting workspace and notes:', e);
+    alert('Failed to delete workspace and its notes. Please try again.');
+  }
+}
+
+
+
+// Workspace Selection linked to note Modal Logic
+
+// NEW: Workspace Selector Modal
+const showWorkspaceSelector = ref(false)
+const tempSelectedWorkspaceId = ref(null)
+const tempSelectedSubgroup = ref(null)
+
+
+// Computed for current subgroups
+const tempCurrentSubgroups = computed(() => {
+  const ws = workspaces.value.find(w => w.id === tempSelectedWorkspaceId.value)
+  return ws?.subgroups ?? []
+})
+
+// Create Note Button Handler (replace your old + button click)
+function Create_Edit_Note_By_WorkSpace(id, Its_Edit_Mode = false) {
+  closeSidebar();
+  let index = 0;
+
+  if (id) index = data.value.findIndex(n => n.id === id) // index
+
+  if (workspaces.value.length === 0) {
+    //
+    if (Its_Edit_Mode)
+      EditBtn(index);
+    else
+      AddNoteBtn();
+    //
+  } else {
+    if (Its_Edit_Mode) {
+      CurrentIndex.value = index
+      EditMode.value = true;
+    }
+    // Show selector
+    if (Its_Edit_Mode && data.value[index]?.WorkSpaceId)
+      tempSelectedWorkspaceId.value = data.value[index].WorkSpaceId;
+    else
+      tempSelectedWorkspaceId.value = null
+
+    if (Its_Edit_Mode && data.value[index]?.SubGroupId)
+      tempSelectedSubgroup.value = data.value[index].SubGroupId;
+    else
+      tempSelectedSubgroup.value = null;
+
+    showWorkspaceSelector.value = true;
+  }
+}
+
+
+let selectedWorkspaceId = ref(null);
+let selectedSubgroup = ref(null);
+
+// Confirm selection and open note modal
+const confirmWorkspaceSelection = () => {
+  selectedWorkspaceId.value = tempSelectedWorkspaceId.value
+  selectedSubgroup.value = tempSelectedSubgroup.value || null
+
+  showWorkspaceSelector.value = false
+
+  if (EditMode.value)
+    EditBtn(CurrentIndex.value);
+  else
+    AddNoteBtn();
+
+}
+
+const cancelWorkspaceSelection = () => {
+  showWorkspaceSelector.value = false
+}
+
+const selectWorkspaceTemp = (id) => {
+  tempSelectedWorkspaceId.value = id
+  tempSelectedSubgroup.value = null
+}
+
+
+
+
 
 // single timeout manager
 function useToggleTimer() {
@@ -4578,7 +5471,7 @@ function Stop_All_Playing_Media(Source) {
   // Find all video and audio elements inside the editor
   let Element_Source;
   if (Source === "Create_Edit_Mode") {
-    Element_Source = editor.value.$el.firstElementChild.querySelectorAll("video, audio");
+    Element_Source = Tiptap_Editor.view.dom.querySelectorAll("video, audio");
   } else if (Source === "View_Mode") {
     Element_Source = Note_View_UI_Text_Element.value.querySelectorAll("video, audio");
   }
@@ -4875,6 +5768,15 @@ function storage_capacity_checker() {
   }
 }
 
+
+const radius = 22
+const circumference = 2 * Math.PI * radius
+
+const dashOffset = computed(() => {
+  return circumference - (Used_Storage_Capacity_Percentage.value / 100) * circumference
+})
+
+
 function ShowErrors(error) {
   try {
     if (error.name === "QuotaExceededError") {
@@ -5089,8 +5991,18 @@ async function SeedNote_On_first_time_app_load() {
       let currentDate = new Date();
       let formattedDate = currentDate.toLocaleDateString();
 
+
+      // WorkSpace
+
+      let WS = {
+        id: 'ws_1776684663761',
+        name: "Our First Note",
+        color: "#F9A03F",
+        subgroups: [{ "name": "Note Sub-Group", "soft_deletion": false, "hard_deletion": false }]
+      }
+
       const Classic_Show_Case_Note = {
-        title: "🌟 Classic Note",
+        title: "Classic Note",
         userWroteHtml: highlightHTMLBlock(Note),
         userWroteJson: json,
         NotesDate: formattedDate,
@@ -5104,10 +6016,13 @@ async function SeedNote_On_first_time_app_load() {
         TimeStamp: new Date().toISOString(),
         // Make sure createdAt exists for ordering (Dexie uses this)
         createdAt: new Date().toISOString(),
+        isFav: true,
+        WorkSpaceId: "ws_1776684663761",
+        SubGroupId: null,
       };
 
       const Colorful_Show_Case_Note = {
-        title: "🌟 Colorful Note",
+        title: "Colorful Note",
         userWroteHtml: highlightHTMLBlock(Note),
         userWroteJson: json,
         NotesDate: formattedDate,
@@ -5121,7 +6036,15 @@ async function SeedNote_On_first_time_app_load() {
         TimeStamp: new Date().toISOString(),
         // Make sure createdAt exists for ordering (Dexie uses this)
         createdAt: new Date().toISOString(),
+        isFav: false,
+        WorkSpaceId: "ws_1776684663761",
+        SubGroupId: 'Note SubGroup',
       };
+
+      toggleFavorite(Classic_Show_Case_Note);
+
+      workspaces.value.push(WS);
+      await db.workSpaces.put(toRaw(WS));
 
       // 1. Save to IndexedDB FIRST
       let cls_res = await Compresion_Worker(Classic_Show_Case_Note, "note", "save");
@@ -5129,15 +6052,18 @@ async function SeedNote_On_first_time_app_load() {
       terminateAllWorkers("save");
 
       if (clr_res.Status == "success" && cls_res.Status == "success") {
+
         // 2. Only mark as seeded if save succeeded
         localStorage.setItem("demoNoteSeeded", "true");
         console.log("✅ Demo note seeded successfully");
         setTimeout(() => {
           All_Notes_Loaded('✨ Welcome To Sticky Colorful Doc Notes App!! ✨');
         }, 1000);
+
+        setTimeout(() => openSidebar(), 1500);
+        setTimeout(() => closeSidebar(), 3000);
+
       }
-
-
     }
   } catch (error) {
     console.error("SeedNote failed:", error);
@@ -5284,9 +6210,18 @@ async function fetchAllNotes() {
     console.log("[Decompression] All workers completed. IDs:", allWorkerIds);
     terminateAllWorkers("view", ...allWorkerIds);
 
+
+    const favs = await db.favorites.toArray();
+    const favIds = favs.map(f => f.id);
+
+    console.log("Favorites fetched:", favIds);
+
     data.value.forEach(note => {
+      note.isFav = favIds.includes(note.id);
       note.ManualOrder = OrderMap.value?.get(note?.id) ?? data.value?.indexOf(note);
     });
+
+
 
     PersistSort();
 
@@ -5315,9 +6250,13 @@ async function fetchAllNotes() {
 async function DeleteNote(Delete_id) {
   try {
     resetController();
-    await db.transaction("rw", db.notes, db.media, async () => {
+    await db.transaction("rw", db.notes, db.media, db.favorites, async () => {
       await db.notes.delete(Delete_id);
       await db.media.delete(Delete_id);
+
+      const fav = await db.favorites.get(Delete_id);
+      if (fav) await db.favorites.delete(Delete_id);
+
       Delete_Note_Sound.play();
     });
     console.log("Notes Deleted Successfully Of Id: " + Delete_id);
@@ -6662,8 +7601,8 @@ function AddNoteBtn() {
     document.body.classList.add("disable_body_scroll_on_note_full_screen");
     if (
       focusOnInput.value &&
-      editor.value.$el.firstElementChild.innerHTML === '<p data-placeholder="Write Your Thoughts /" class="is-empty is-editor-empty"><br class="ProseMirror-trailingBreak"></p>' &&
-      editor.value.$el.innerText.trim() === ""
+      Tiptap_Editor.view.dom.innerHTML === '<p data-placeholder="Write Your Thoughts /" class="is-empty is-editor-empty"><br class="ProseMirror-trailingBreak"></p>' &&
+      Tiptap_Editor.view.dom.innerText.trim() === ""
     ) {
       setTimeout(() => {
         focusOnInput.value.focus();
@@ -6785,9 +7724,11 @@ function RO_View_Mode_Array_And_Links_Cleaner() {
 }
 
 let Opening_note_In_view_mode_progressing = ref(false);
-let Opening_note_In_view_mode_completed = ref(false);
 
-async function RO_ViewNotePage(index) {
+async function RO_ViewNotePage(id) {
+
+  const index = data.value.findIndex(n => n.id === id) // index
+
   let Html_String;
   let RO_View_Mode_Pull_Decompressed_Media_From_Index_DB = null;
   let Final_Media_Embedded_Html_String;
@@ -6801,7 +7742,7 @@ async function RO_ViewNotePage(index) {
       pendingCloseTimeout = null;
     }
 
-
+    closeSidebar();
     Opening_note_In_view_mode_progressing.value = true;
     data.value[index].IsLoading = true;
     await new Promise(r => requestAnimationFrame(r));
@@ -6816,7 +7757,7 @@ async function RO_ViewNotePage(index) {
       Html_String
     );
     IsRoViewNoteOpen.value = true;
-    await new Promise(r => requestAnimationFrame(r));
+    /*     await new Promise(r => requestAnimationFrame(r)); */
     await new Promise((resolve) => setTimeout(resolve, 400));
     data.value[index].IsLoading = false;
     if (Toggle_Reading_Form_Full_Screen.value)
@@ -6832,7 +7773,8 @@ async function RO_ViewNotePage(index) {
       await nextTick();
       //
       mediaElements = Array.from(Note_View_UI_Text_Element.value.querySelectorAll("img, video, audio"));
-      await Promise.all(mediaElements.map(el => runAnimation(el)));
+      Opening_note_In_view_mode_completed.value = true;
+      await Promise.all(mediaElements.map(el => runAnimation(el, true)));
       //
       if (viewLenis) viewLenis.resize();
 
@@ -6853,9 +7795,10 @@ async function RO_ViewNotePage(index) {
     } else {
       await nextTick();
 
-      // for onlin media if local is no found in array.
+      // for online media if local is no found in array.
       mediaElements = Array.from(Note_View_UI_Text_Element.value.querySelectorAll("img, video, audio"));
-      await Promise.all(mediaElements.map(el => runAnimation(el)));
+      Opening_note_In_view_mode_completed.value = true;
+      await Promise.all(mediaElements.map(el => runAnimation(el, true)));
 
       if (viewLenis) viewLenis.resize();
       View_Note_Page_UI.value.focus();
@@ -6865,9 +7808,6 @@ async function RO_ViewNotePage(index) {
     await CloseBtn(null);
     console.log(error.message);
     debugError(error, "RO_View_Note");
-  }
-  finally {
-    Opening_note_In_view_mode_completed.value = true;
   }
 }
 // RO_Mode_End.
@@ -6956,7 +7896,7 @@ async function EditBtn(index) {
     Toggle_MarkDown_Menu.value = false;
     Note_heading_element.value.textContent = "Edit Note";
     disable_color_notes_switcher_btn.value = false;
-    Note_Createt_Close_btn.value.style.display = "none";
+    Note_Create_Close_btn.value.style.display = "none";
     Create_Edit_Btn_Sound.play();
 
     EditMode.value = true;
@@ -6964,7 +7904,7 @@ async function EditBtn(index) {
     CurrentIndex.value = index;
 
     // Save pending create note if any
-    if (editor.value.$el.firstElementChild.innerText.trim() !== "" || editor.value.$el.firstElementChild.innerHTML !== "" || CurrentlyWritingTitle.value?.length) {
+    if (Tiptap_Editor.view.dom.innerText.trim() !== "" || Tiptap_Editor.view.dom.innerHTML !== "" || CurrentlyWritingTitle.value?.length) {
       temp_for_save_Create_Note_Text_if_available_parallelly.value[0] = CurrentlyWritingTitle.value;
       temp_for_save_Create_Note_Text_if_available_parallelly.value[1] = Tiptap_Editor.getJSON();
     }
@@ -7217,12 +8157,18 @@ async function Handle_Undo(event) {
 
 async function DeleteCard(event, index) {
   try {
-    const noteId = data.value[index].id; // capture ID immediately
-    data.value[index].isCardGoingDeleted = true;
 
     const wrapper = event.target.closest(".card_wrapper");
+    let noteId = parseInt(wrapper.getAttribute("data-id")) || data.value[index].id;
     const card = wrapper.querySelector(".cards");
     const Undo = wrapper.querySelector(".undo-card");
+
+    // find note object by id and toggle its going to delted proprty to true
+    data.value.forEach(n => {
+      if (n.id === noteId) {
+        n.isCardGoingDeleted = true;
+      }
+    });
 
     await new Promise((resolve) => setTimeout(resolve, 300));
     card.style.display = "none";
@@ -7307,7 +8253,7 @@ async function Edit_Mode_Done_Btn() {
       return;
     }
     if (
-      editor.value.$el.firstElementChild.innerText.trim() !== "" ||
+      Tiptap_Editor.view.dom.innerText.trim() !== "" ||
       CurrentlyWritingTitle.value.trim() !== ""
     ) {
       // Capture the index locally
@@ -7321,6 +8267,9 @@ async function Edit_Mode_Done_Btn() {
       let formattedDate = currentDate.toLocaleDateString();
       data.value[currentIndex].NotesDate = formattedDate;
       data.value[currentIndex].IsLoading = true;
+      data.value[currentIndex].WorkSpaceId = selectedWorkspaceId.value;
+      data.value[currentIndex].SubGroupId = selectedSubgroup.value;
+
 
       stopRecording();
       Stop_All_Playing_Media("Create_Edit_Mode");
@@ -7336,7 +8285,7 @@ async function Edit_Mode_Done_Btn() {
       Blur_Background_WhileOpening_Note.value = false;
       data.value[currentIndex].Attachment_Used_Size = Max_Accumulated_Attachments_Size.value;
       Max_Accumulated_Attachments_Size.value = Save_The_Create_Notes_Max_Accu_Attachment_Capacity_While_Switching_To_Edit_Note.value;
-      Note_Createt_Close_btn.value.style.display = "block";
+      Note_Create_Close_btn.value.style.display = "block";
       EditMode.value = false;
       Toggle_Table_Menu.value = false;
       disable_color_notes_switcher_btn.value = true;
@@ -7463,7 +8412,7 @@ async function Create_Note_Done_Btn() {
       await waitForKeyboardClose(200);
 
     if (
-      editor.value.$el.firstElementChild.innerText.trim() !== "" ||
+      Tiptap_Editor.view.dom.innerText.trim() !== "" ||
       CurrentlyWritingTitle.value.trim() !== ""
     ) {
       let currentDate = new Date();
@@ -7490,6 +8439,9 @@ async function Create_Note_Done_Btn() {
         Attachment_Used_Size: Max_Accumulated_Attachments_Size.value,
         TimeStamp: new Date().toISOString(),
         ManualOrder: null,
+        isFav: false,
+        WorkSpaceId: selectedWorkspaceId.value,
+        SubGroupId: selectedSubgroup.value,
       };
 
       stopRecording();
@@ -7819,7 +8771,7 @@ function Editor_Keyboard_Actions(event) {
   if (
     event.key == "Enter" &&
     event.ctrlKey &&
-    editor.value.$el.firstElementChild.focus &&
+    Tiptap_Editor.view.dom.focus &&
     !toggle_delete_model.value &&
     !Show_Choice_Dialog.value &&
     !Show_Type_Dialog.value &&
@@ -7898,9 +8850,9 @@ function SearchBtnLogic() {
       });
       // Toggle "No Notes Found" message
       if (!notesFound) {
-        No_Notes_Found_Message_Element.value.style.display = "flex";
+        Is_No_Notes_Found_Message.value = true;
       } else {
-        No_Notes_Found_Message_Element.value.style.display = "none";
+        Is_No_Notes_Found_Message.value = false;
       }
     }
   } catch (error) {
@@ -7911,8 +8863,8 @@ function SearchBtnLogic() {
 function AdjustCameraScreenSize() {
   try {
     if (!videoPreview.value || !videoPreview.value.style) return;
-    videoPreview.value.style.width = editor.value.$el.firstElementChild.offsetWidth + "px"; // Append "px"
-    videoPreview.value.style.height = editor.value.$el.firstElementChild.offsetHeight + "px"; // Append "px"
+    videoPreview.value.style.width = Tiptap_Editor.view.dom.offsetWidth + "px"; // Append "px"
+    videoPreview.value.style.height = Tiptap_Editor.view.dom.offsetHeight + "px"; // Append "px"
   } catch (error) {
     console.log(error.message);
   }
@@ -8239,8 +9191,8 @@ onBeforeUnmount(() => {
   //
   if (editorRafId) cancelAnimationFrame(editorRafId);
   if (viewRafId) cancelAnimationFrame(viewRafId);
-  editor.value.$el.firstElementChild.removeEventListener('keydown', handleEditorKeyboardScroll);
-  editor.value.$el.firstElementChild.removeEventListener('load', resize_lenis_scroll_On_media_Adition);
+  Tiptap_Editor.view.dom.removeEventListener('keydown', handleEditorKeyboardScroll);
+  Tiptap_Editor.view.dom.removeEventListener('load', resize_lenis_scroll_On_media_Adition);
   View_Note_Page_UI.value.removeEventListener('keydown', handleViewKeyboardScroll);
   if (editorLenis) editorLenis.destroy();
   if (viewLenis) viewLenis.destroy();
@@ -8296,7 +9248,7 @@ onMounted(async () => {
   checkViewport();
   initializeLenisScroll();
   await new Promise(resolve => setTimeout(resolve, 10));
-  editor.value.$el.firstElementChild.classList.add("model_note");
+  Tiptap_Editor.view.dom.classList.add("model_note");
   history.pushState(null, document.title, window.location.href);
   window.addEventListener("popstate", handlePopState);
   window.addEventListener("resize", On_Resize);
@@ -8322,7 +9274,7 @@ onMounted(async () => {
   storage_capacity_checker();
   change_text_alignment();
   ///
-  if (editor.value.$el.firstElementChild) {
+  if (Tiptap_Editor.view.dom) {
     Observer = new MutationObserver(() => {
       try {
         if (editorLenis) editorLenis.resize();
@@ -8334,7 +9286,7 @@ onMounted(async () => {
     });
   }
   //
-  Observer.observe(editor.value.$el.firstElementChild, {
+  Observer.observe(Tiptap_Editor.view.dom, {
     childList: true,
     subtree: true,
     characterData: true,
@@ -8355,6 +9307,14 @@ onMounted(async () => {
   }
 
   setManageMediaMethod(manageMedia);
+
+  console.log('Tiptap official dom access: '+Tiptap_Editor.view.dom)
+
+  console.log('Direct editor ref dom access: '+Tiptap_Editor.view.dom)
+
+  console.log(Tiptap_Editor.view.dom === Tiptap_Editor.view.dom)
+// true if they’re the same node
+
 });
 
 
@@ -8389,8 +9349,8 @@ onUnmounted(() => {
   clearTimeout(debounceTimeout); // Add timeout cleanup
 
   window.removeEventListener("popstate", handlePopState);
-  editor.value.$el.firstElementChild.removeEventListener('keydown', handleEditorKeyboardScroll);
-  editor.value.$el.firstElementChild.removeEventListener('load', resize_lenis_scroll_On_media_Adition);
+  Tiptap_Editor.view.dom.removeEventListener('keydown', handleEditorKeyboardScroll);
+  Tiptap_Editor.view.dom.removeEventListener('load', resize_lenis_scroll_On_media_Adition);
   View_Note_Page_UI.value.removeEventListener('keydown', handleViewKeyboardScroll);
   editorLenis.destroy();
   viewLenis.destroy();
