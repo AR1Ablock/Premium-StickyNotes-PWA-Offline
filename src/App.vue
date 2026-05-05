@@ -2031,6 +2031,53 @@
         <div class="notes_Writing_Area_Wrapper notes_Writing_Area_Wrapper_mobile_view">
           <input name="Main_Note_Writing_Area" ref="focusOnInput" type="text" class="title editor_title_mobile_view"
             placeholder="Note Title" v-model="CurrentlyWritingTitle" />
+          <!-- bubble-menu-small screens -->
+
+          <BubbleMenu v-if="Tiptap_Editor && !Show_prompt_input_dialog" :editor="Tiptap_Editor"
+            :options="bubbleMenuOptions" :should-show="shouldShowBubbleMenu" class="bubble-menu">
+            <div class="bm_btn_wrapper" v-for="(item, idx) in Bubble_Menu" :key="idx">
+              <button class="bm-btn" @click="item.action === 'Custom' ? Open_dialog(item) : Modify_By_AI(item)"
+                :class="[{ loader_disable_btn_effects: item.loading }, { mb_stop_btn: item.action === 'Stop' }]">
+                <b :class="{ bm_label_fade: item.loading }">{{ item.action }}</b>
+                <div v-if="item.loading" class="Upload_Loader bubble_menu_btn_loader"> </div>
+              </button>
+              <div v-if="Bubble_Menu.length - 1 !== idx" class="bm-divider"> </div>
+            </div>
+          </BubbleMenu>
+
+
+          <!-- AI Status Bar -->
+          <div v-if="Is_AI_Edit_Started" class="ai-floating-bar">
+            <div class="ai-bar-content">
+              <div class="ai-status">
+                <span class="ai-dot"></span>
+                <span class="ai-text">AI is generating...</span>
+              </div>
+
+              <button @click="Stop_AI_Generation" class="stop-button">
+                ⏹️ Stop
+              </button>
+            </div>
+          </div>
+
+          <!-- custom ai prompt input dialog -->
+          <div class="prompt-overlay" :class="{ active: Show_prompt_input_dialog }" id="promptOverlay"
+            @click="Show_prompt_input_dialog = false">
+            <div class="prompt-dialog" @click.stop>
+              <label class="prompt-dialog-label" for="promptInput">Prompt</label>
+
+              <textarea v-model.trim="prompt_input" ref="prompt_dialog_input_ref" id="promptInput"
+                class="prompt-dialog-input" placeholder="Write instructions to change selected content…"
+                rows="3"></textarea>
+
+              <div class="prompt-dialog-actions">
+                <button class="prompt-btn prompt-btn--cancel" @click="Show_prompt_input_dialog = false">Cancel</button>
+                <button class="prompt-btn prompt-btn--apply" @click="applyPrompt">Apply</button>
+              </div>
+            </div>
+          </div>
+
+
           <!-- EDITOR ELEMENT -->
           <EditorContent class="tiptap_editor_div_wrapper" name="notewriting" ref="editor" :editor="Tiptap_Editor">
           </EditorContent>
@@ -3581,6 +3628,56 @@
         <!--  -->
 
         <div class="notes_Writing_Area_Wrapper">
+          <!-- bubble-menu desktop screens -->
+
+
+          <BubbleMenu v-if="Tiptap_Editor && !Show_prompt_input_dialog" :editor="Tiptap_Editor"
+            :should-show="shouldShowBubbleMenu" class="bubble-menu">
+            <div class="bm_btn_wrapper" v-for="(item, idx) in Bubble_Menu" :key="idx">
+              <button class="bm-btn" @click="item.action === 'Custom' ? Open_dialog(item) : Modify_By_AI(item)"
+                :class="[{ loader_disable_btn_effects: item.loading }]">
+                <b :class="{ bm_label_fade: item.loading }">{{ item.action }}</b>
+                <div v-if="item.loading" class="Upload_Loader bubble_menu_btn_loader"> </div>
+              </button>
+              <div v-if="Bubble_Menu.length - 1 !== idx" class="bm-divider"> </div>
+            </div>
+
+          </BubbleMenu>
+
+
+          <!-- AI Status Bar -->
+          <div v-if="Is_AI_Edit_Started" class="ai-floating-bar">
+            <div class="ai-bar-content">
+              <div class="ai-status">
+                <span class="ai-dot"></span>
+                <span class="ai-text">AI is generating...</span>
+              </div>
+
+              <button @click="Stop_AI_Generation" class="stop-button">
+                ⏹️ Stop
+              </button>
+            </div>
+          </div>
+
+
+          <div class="prompt-overlay" :class="{ active: Show_prompt_input_dialog }" id="promptOverlay"
+            @click="Show_prompt_input_dialog = false">
+            <div class="prompt-dialog" @click.stop>
+              <label class="prompt-dialog-label" for="promptInput">Prompt</label>
+
+              <textarea v-model.trim="prompt_input" ref="prompt_dialog_input_ref" id="promptInput"
+                class="prompt-dialog-input" placeholder="Write instructions to change selected content…"
+                rows="3"></textarea>
+
+              <div class="prompt-dialog-actions">
+                <button class="prompt-btn prompt-btn--cancel" @click="Show_prompt_input_dialog = false">Cancel</button>
+                <button class="prompt-btn prompt-btn--apply" @click="applyPrompt">Apply</button>
+              </div>
+            </div>
+          </div>
+
+
+
           <!-- EDITOR ELEMENT -->
           <EditorContent name="notewriting" ref="editor" :editor="Tiptap_Editor">
           </EditorContent>
@@ -3766,7 +3863,7 @@
           </section>
 
           <div class="View_Text_In_UI View_Text_In_UI_Title" v-html="SendNoteForView_Title"></div>
-          <div ref="Note_View_UI_Text_Element" style="padding-bottom: clamp(2rem, 8vw, 5rem);" class="View_Text_In_UI"
+          <div ref="Note_View_UI_Text_Element" style="padding-bottom: clamp(2rem, 8vw, 5rem);" class="Read_only_mode View_Text_In_UI"
             v-html="SendNoteForView_Message"></div>
           <!-- view ui closing btn -->
           <button class="btn close_note_create_edit_btn" @click="CloseBtn(null)" title="Close"
@@ -4164,9 +4261,8 @@
 <script setup>
 import draggable from 'vuedraggable'
 //
-//
-import { ref, toRaw, onMounted, onUnmounted, computed, onBeforeUnmount, nextTick, reactive, watch, defineAsyncComponent } from "vue";
 
+import { ref, toRaw, onMounted, onUnmounted, computed, onBeforeUnmount, nextTick, reactive, watch, defineAsyncComponent } from "vue";
 //
 import validator from 'validator';
 
@@ -4202,9 +4298,21 @@ import {
   Is_Table_Cell_Background_Color_Active,
   Is_Font_Color_Active,
 } from "./components/TipTap_Editor"; // Your new file from last response
-
+//
+import {
+  Bubble_Menu,
+  Modify_By_AI,
+  prompt_input,
+  Show_prompt_input_dialog,
+  shouldShowBubbleMenu,
+  prompt_dialog_input_ref,
+  bubbleMenuOptions,
+  Is_AI_Edit_Started,
+  Stop_AI_Generation
+} from './components/AI_Feature'
 //
 import { EditorContent } from "@tiptap/vue-3"; // The component
+import { BubbleMenu } from "@tiptap/vue-3/menus"; // The component
 
 // Utilities
 import { debugError } from "./components/Global_Error_Handler";
@@ -4598,7 +4706,31 @@ async function toggleFavorite(note) {
 }
 
 
+/* bubble menu prompt input dialog */
 
+let custom_action_item;
+
+async function Open_dialog(custom_action) {
+  Show_prompt_input_dialog.value = true;
+  await new Promise(resolve => setTimeout(resolve, 250));
+  prompt_dialog_input_ref.value.focus();
+  custom_action_item = custom_action;
+}
+
+
+async function applyPrompt() {
+  const value = prompt_input.value;
+  if (value) {
+    console.log('Prompt applied:', value);
+  }
+  else {
+    Show_Create_Edit_Model_Warning("No Instruction found.", 3000);
+    return;
+  }
+  await waitForKeyboardClose(200);
+  Show_prompt_input_dialog.value = false;
+  Modify_By_AI(custom_action_item);
+}
 
 /* =============================================
    STATE (Composition API - latest Vue 3 pattern)
@@ -5238,6 +5370,12 @@ function chooseSource(source) {
       Show_Overlay.value = false;
       fileInput_tag_ref.value.click();
     } else {
+      if (!navigator.onLine) {
+        console.error("No internet connection. Cannot call AI server.");
+        Show_Create_Edit_Model_Warning("You are offline. Please check your internet connection.", 3000);
+        cancelDialog();
+        return;
+      }
       Show_Type_Dialog.value = true;
     }
   } catch (error) {
@@ -5281,6 +5419,7 @@ let Online_Media_Object_Count = ref({
 
 async function applyDialog() {
   try {
+
     // Turn off the device keyboard
     if (isTouchFirst.value)
       await waitForKeyboardClose(50);
@@ -5998,7 +6137,7 @@ async function SeedNote_On_first_time_app_load() {
         id: 'ws_1776684663761',
         name: "Our First Note",
         color: "#F9A03F",
-        subgroups: [{ "name": "Note Sub-Group", "soft_deletion": false, "hard_deletion": false }]
+        subgroups: [{ "name": "Note SubGroup", "soft_deletion": false, "hard_deletion": false }]
       }
 
       const Classic_Show_Case_Note = {
@@ -9308,12 +9447,12 @@ onMounted(async () => {
 
   setManageMediaMethod(manageMedia);
 
-  console.log('Tiptap official dom access: '+Tiptap_Editor.view.dom)
+  console.log('Tiptap official dom access: ' + Tiptap_Editor.view.dom)
 
-  console.log('Direct editor ref dom access: '+Tiptap_Editor.view.dom)
+  console.log('Direct editor ref dom access: ' + Tiptap_Editor.view.dom)
 
   console.log(Tiptap_Editor.view.dom === Tiptap_Editor.view.dom)
-// true if they’re the same node
+  // true if they’re the same node
 
 });
 

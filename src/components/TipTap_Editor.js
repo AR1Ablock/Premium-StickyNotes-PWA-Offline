@@ -26,18 +26,18 @@ import { ref } from 'vue'
 import { MediaNode } from "./Media_Custom_Tiptap_Node/Media_Node_Scheme";
 import { MediaNodeView } from "./Media_Custom_Tiptap_Node/Media_Node_View";
 import { Paste } from "./Paste_Drag_Drop_Handler";
-
 //
 import Suggestion from '@tiptap/suggestion'
 import tippy from 'tippy.js'
 import 'tippy.js/dist/tippy.css'
+
 //
 import { all, createLowlight } from 'lowlight'                    // ← Import ALL languages
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 
 // Create lowlight instance with ALL languages (required for auto-detect)
 
-let manageMedia_Metod_ref = ref(null); // Ref to hold the manageMedia method
+export let manageMedia_Metod_ref = ref(null); // Ref to hold the manageMedia method
 
 export function setManageMediaMethod(method) {
   manageMedia_Metod_ref.value = method;
@@ -897,6 +897,8 @@ const slashItems = [
   { title: 'Heading 1', icon: 'fa-solid fa-heading', desc: 'Large heading', group: 'Headings', command: () => commands.toggleHeading(1) },
   { title: 'Heading 2', icon: 'fa-solid fa-heading', desc: 'Medium heading', group: 'Headings', command: () => commands.toggleHeading(2) },
   { title: 'Heading 3', icon: 'fa-solid fa-heading', desc: 'Small heading', group: 'Headings', command: () => commands.toggleHeading(3) },
+  { title: 'Heading 4', icon: 'fa-solid fa-heading', desc: 'Smaller heading', group: 'Headings', command: () => commands.toggleHeading(4) },
+  { title: 'Heading 5', icon: 'fa-solid fa-heading', desc: 'Smallest heading', group: 'Headings', command: () => commands.toggleHeading(5) },
   { title: 'Paragraph', icon: 'fa-solid fa-paragraph', desc: 'Normal text', group: 'Headings', command: () => commands.toggleHeading_off() },
 
   // Lists
@@ -1072,7 +1074,6 @@ const Column = Node.create({
     ]
   },
 });
-
 
 
 const lowlight = createLowlight(all);
