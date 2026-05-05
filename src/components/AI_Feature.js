@@ -39,13 +39,15 @@ export const bubbleMenuOptions = {
     }
 }
 
+
+
 export let Show_prompt_input_dialog = ref(false);
 export let prompt_dialog_input_ref = ref();
 export let prompt_input = ref(null);
 
 
 
-let mistral_api_key = "wthlMib6XYQ7HJ5UXDtw5eRMWuOt79jj"
+let mistral_api_key = ""
 
 
 const AI_SYSTEM_PROMPT = `
