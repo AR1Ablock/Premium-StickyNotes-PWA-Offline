@@ -1,18 +1,23 @@
 import { DOMSerializer } from 'prosemirror-model'
 import { manageMedia_Metod_ref, Show_Create_Edit_Model_Warning, Tiptap_Editor } from "./TipTap_Editor";
-import { marked } from 'marked'; // Install via: npm install marked
 import { ref } from "vue";
+import { startStreaming } from './Text_To_Speech';
+import { fully_close_prompt_STT, fullyCloseSTT } from './Speech_To_Text';
+import { waitForKeyboardClose } from './Is_Touch';
+import mdit from './MarkDown_It';
+import { OCR_Processing } from './OCR';
 
 
 
 
 export const Bubble_Menu = ref([
-  { action: "Improve", loading: false, content: "Enhance clarity, meaning, understandable grammar and style of the selected content." },
-  { action: "Summery", loading: false, content: "Condense the selected content into a brief summary." },
-  { action: "Detailed", loading: false, content: "Expand the selected content with more depth and explanation." },
-  { action: "Tone", loading: false, content: "Adjust the tone of the selected content (professional, formal, casual, persuasive, etc.)." },
-  { action: "Shorten", loading: false, content: "Make the selected content more concise while keeping meaning intact." },
-  { action: "Custom", loading: false, content: "Apply a custom user-defined instruction to the selected content." },
+    { action: "Improve", loading: false, content: "Enhance clarity, meaning, understandable grammar and style of the selected content." },
+    { action: "Summery", loading: false, content: "Condense the selected content into a brief summary." },
+    { action: "Detailed", loading: false, content: "Expand the selected content with more depth and explanation." },
+    { action: "Tone", loading: false, content: "Adjust the tone of the selected content (professional, formal, casual, persuasive, etc.)." },
+    { action: "Shorten", loading: false, content: "Make the selected content more concise while keeping meaning intact." },
+    { action: "Custom", loading: false, content: '' },
+    { action: "TTS", loading: false, content: "" },
 ]);
 
 
@@ -24,7 +29,7 @@ export const shouldShowBubbleMenu = ({ editor, state, from, to }) => {
     // Check if the selected range is purely text instead of media or empty space
     const isText = editor.state.doc.textBetween(from, to).length > 0;
 
-    return !empty && isText;
+    return !empty && isText && !OCR_Processing.value; // Don't show during OCR processing;
 };
 
 
@@ -39,15 +44,13 @@ export const bubbleMenuOptions = {
     }
 }
 
-
-
 export let Show_prompt_input_dialog = ref(false);
 export let prompt_dialog_input_ref = ref();
 export let prompt_input = ref(null);
 
 
 
-let mistral_api_key = ""
+let mistral_api_key = "wthlMib6XYQ7HJ5UXDtw5eRMWuOt79jj"
 
 
 const AI_SYSTEM_PROMPT = `
@@ -99,8 +102,11 @@ If the user intent is clearly to generate an image (words like "generate image",
 
 const INACTIVITY_TIMEOUT = 30000;   // 22 seconds - Best balance
 const HARD_TOTAL_TIMEOUT = 60000;  // 2 minutes max (safety)
+
 let AI_in_progress = ref(false);
+
 export let Is_AI_Edit_Started = ref(false);
+
 let Is_Response_An_image = ref(false);
 let controller = null;
 
@@ -110,6 +116,7 @@ export function Stop_AI_Generation() {
     if (controller) {
         controller.abort();
         controller = null;
+        console.log("[AI] Generation stopped by user.");
     }
 }
 
@@ -137,6 +144,7 @@ export async function Modify_By_AI(Apply) {
 
         if (Apply.action === "Custom" && !prompt_input.value) {
             console.warn("[AI] Custom action without prompt input - aborted");
+            Show_Create_Edit_Model_Warning("Please enter an instruction for the custom action.", 3000);
             return;
         }
 
@@ -175,6 +183,15 @@ export async function Modify_By_AI(Apply) {
         console.log(`[AI] Target Selection HTML: ${selectedHTML.substring(0, 250)}${selectedHTML.length > 250 ? '...' : ''}`);
         console.log(`[AI] Selection Range: ${from} → ${to} | Length: ${to - from}`);
 
+        fullyCloseSTT(); // Ensure any active STT sessions are closed before TTS
+        fully_close_prompt_STT(); // Close prompt STT if open
+
+        if (Apply.action === "TTS") {
+            console.log(`[AI] Starting TTS streaming for selected content...`);
+            await startStreaming(selectedText, Apply, AI_in_progress);
+            return; // Exit early since TTS is a different flow
+        }
+
         let accumulatedMarkdown = "";
         let currentEndPos = to;
         let chunkCount = 0;
@@ -202,8 +219,8 @@ export async function Modify_By_AI(Apply) {
                 ? prompt_input.value
                 : Apply.content;
 
-                console.log("--- User Instruction --- : "+userInstruction);
-                
+            console.log("--- User Instruction --- : " + userInstruction);
+
 
 
             // Hard total timeout
@@ -301,7 +318,7 @@ export async function Modify_By_AI(Apply) {
                             else if (typeof data.content === "string") {
                                 accumulatedMarkdown += data.content;
 
-                                const htmlOutput = marked.parse(accumulatedMarkdown);
+                                const htmlOutput = mdit.render(accumulatedMarkdown);
 
                                 editor.chain()
                                     .focus()
@@ -342,7 +359,7 @@ export async function Modify_By_AI(Apply) {
             prompt_input.value = null;
             AI_in_progress.value = false;
             Is_AI_Edit_Started.value = false;
-            
+
             console.log(`[AI] Operation finished in ${Date.now() - startTime}ms`);
         }
     } catch (error) {
@@ -381,4 +398,37 @@ async function handleImageResult(fileId, name = null, item) {
         Is_Response_An_image.value = false;
         item.loading = false;
     }
+}
+
+
+/* bubble menu prompt input dialog */
+
+let custom_action_item;
+
+export async function Open_dialog(custom_action) {
+  if (!navigator.onLine) {
+    Show_Create_Edit_Model_Warning("You are offline, Please check your internet connection.", 3000);
+    return;
+  }
+  fullyCloseSTT();
+  Show_prompt_input_dialog.value = true;
+  await new Promise(resolve => setTimeout(resolve, 250));
+  prompt_dialog_input_ref.value.focus();
+  custom_action_item = custom_action;
+}
+
+
+export async function applyPrompt() {
+  const value = prompt_input.value;
+  if (value) {
+    console.log('Prompt applied:', value);
+  }
+  else {
+    Show_Create_Edit_Model_Warning("No Instruction found.", 3000);
+    return;
+  }
+  await waitForKeyboardClose(200);
+  fully_close_prompt_STT();
+  Show_prompt_input_dialog.value = false;
+  Modify_By_AI(custom_action_item);
 }

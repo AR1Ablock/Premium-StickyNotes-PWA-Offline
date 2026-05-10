@@ -103,3 +103,43 @@ export function useTouchDetection() {
 
   return { isTouchFirst }
 }
+
+
+
+export function waitForKeyboardClose(maxWait = 500) {
+  new Promise(resolve => requestAnimationFrame(resolve)).then(() => { });
+  return new Promise((resolve) => {
+    let done = false;
+
+    if (!document.activeElement || document.activeElement === document.body) {
+      resolve();
+      return;
+    }
+
+    // Force blur on whatever is focused
+    if (document.activeElement && typeof document.activeElement.blur === "function") {
+      document.activeElement.blur();
+    }
+
+    // Fallback timer
+    const timer = setTimeout(() => {
+      if (!done) {
+        done = true;
+        resolve(); // continue even if no blur event fired
+      }
+    }, maxWait);
+
+    // Listen for blur/focusout
+    document.addEventListener(
+      "focusout",
+      () => {
+        if (!done) {
+          clearTimeout(timer);
+          done = true;
+          resolve(); // continue once blur happens
+        }
+      },
+      { once: true }
+    );
+  });
+}

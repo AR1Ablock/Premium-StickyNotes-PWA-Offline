@@ -162,7 +162,7 @@ if (typeof document !== 'undefined') {
 
 
 
-let our_allowlist = {
+/* let our_allowlist = {
   // Custom allowlist: Tags to keep (override DOMPurify defaults for stricter control)
   ALLOWED_TAGS: [
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6', // Headings
@@ -185,7 +185,7 @@ let our_allowlist = {
   // Forbid specific attributes (e.g., events)
   FORBID_ATTR: ['onload', 'onclick', 'onerror', 'onmouseover'],
   // Other options: See DOMPurify docs for more (e.g., ALLOWED_STYLES for CSS)
-}
+} */
 
 
 
@@ -195,6 +195,7 @@ const mdit = new MarkdownIt({
   html: true,
   linkify: true,
   typographer: true,
+  breaks: true,
   highlight: (str, lang) => {
     try {
       if (lang && hljs.getLanguage(lang)) {

@@ -697,6 +697,7 @@
               </button>
 
               <div class="Styling_Btn_Levels" :class="{ Show_Styling_Btn_level: Toggle_Line_Spacing }">
+                <button @click="commands.setLineHeight(1.5); Toggle_Line_Spacing = false">1.5</button>
                 <button @click="commands.setLineHeight(1.75); Toggle_Line_Spacing = false">1.75</button>
                 <button @click="commands.setLineHeight(2); Toggle_Line_Spacing = false">2</button>
                 <button @click="commands.setLineHeight(2.25); Toggle_Line_Spacing = false">2.25</button>
@@ -1633,7 +1634,7 @@
               <div v-if="Show_Choice_Dialog" class="style-dialog">
                 <h2>Select Source</h2>
                 <button class="option" @click="chooseSource('local')">
-                  <span>
+                  <div class="select_file_source_wrapper">
                     <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
                       <!-- frame -->
                       <rect x="2" y="2" width="60" height="60" rx="12" ry="12" fill="none" stroke="#FFD700"
@@ -1654,11 +1655,11 @@
                     </svg>
 
                     <span> Attach From Device </span>
-                  </span>
+                  </div>
                 </button>
 
                 <button class="option" @click="chooseSource('online')">
-                  <span>
+                  <div class="select_file_source_wrapper">
                     <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
                       <!-- frame -->
                       <rect x="2" y="2" width="60" height="60" rx="12" ry="12" fill="none" stroke="#FFD700"
@@ -1677,8 +1678,41 @@
                       </g>
                     </svg>
                     <span> Attach Online </span>
-                  </span>
+                  </div>
                 </button>
+
+                <button :disabled="OCR_Processing" class="option ocr" @click="chooseSource('OCR')">
+                  <div class="select_file_source_wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 512 512" fill="none">
+                      <!-- Scan Corners -->
+                      <path d="M96 176V128C96 110 110 96 128 96H176" stroke="#FFD700" stroke-width="28"
+                        stroke-linecap="round" stroke-linejoin="round" />
+
+                      <path d="M336 96H384C402 96 416 110 416 128V176" stroke="#FFD700" stroke-width="28"
+                        stroke-linecap="round" stroke-linejoin="round" />
+
+                      <path d="M416 336V384C416 402 402 416 384 416H336" stroke="#FFD700" stroke-width="28"
+                        stroke-linecap="round" stroke-linejoin="round" />
+
+                      <path d="M176 416H128C110 416 96 402 96 384V336" stroke="#FFD700" stroke-width="28"
+                        stroke-linecap="round" stroke-linejoin="round" />
+
+                      <!-- Center OCR/Text -->
+                      <rect x="148" y="168" width="216" height="36" rx="18" fill="#FFD700" />
+
+                      <rect x="148" y="244" width="150" height="36" rx="18" fill="#FFD700" />
+
+                      <rect x="148" y="320" width="110" height="36" rx="18" fill="#FFD700" />
+                    </svg>
+
+                    <div class="select_file_OCR_text_wrapper">
+                      <span> OCR Extract Text </span>
+                      <div class="Upload_Loader OCR_loader" :class="{ 'Upload_Loader_active': OCR_Processing }"></div>
+                    </div>
+
+                  </div>
+                </button>
+
               </div>
 
               <div v-if="Show_Type_Dialog" class="style-dialog">
@@ -1806,6 +1840,21 @@
             </div>
 
             <!--  -->
+
+            <button @click="menuVisible = !menuVisible; stopEverything()" class="STT_btn" title="Speech to text">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 512 512" fill="none">
+                <rect x="26" y="100" width="33" height="76" rx="16.5" fill="#FFD700" />
+                <rect x="90" y="36" width="33" height="203" rx="16.5" fill="#FFD700" />
+                <rect x="154" y="78" width="33" height="119" rx="16.5" fill="#FFD700" />
+                <rect x="218" y="100" width="33" height="76" rx="16.5" fill="#FFD700" />
+
+                <rect x="176" y="355" width="157" height="33" rx="16.5" fill="#FFD700" />
+
+                <path
+                  d="M290 95H430C461.3 95 487 120.7 487 152V438C487 469.3 461.3 495 430 495H110C78.7 495 53 469.3 53 438V281"
+                  stroke="#FFD700" stroke-width="33" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
 
             <button ref="recordAudioButton" @click="AudioRec"
               :title="Is_Audio_Recording ? 'Stop Recording' : 'Record Audio'">
@@ -2060,22 +2109,243 @@
             </div>
           </div>
 
+
+          <!-- OCR Status Bar -->
+          <div v-if="OCR_Processing" class="ai-floating-bar">
+            <div class="ai-bar-content">
+              <div class="ai-status">
+                <span class="ai-dot"></span>
+                <span class="ai-text">{{ OCR_Status }}</span>
+              </div>
+
+              <button @click="Stop_OCR" class="stop-button">
+                ⏹️ Stop
+              </button>
+            </div>
+          </div>
+
+
           <!-- custom ai prompt input dialog -->
           <div class="prompt-overlay" :class="{ active: Show_prompt_input_dialog }" id="promptOverlay"
-            @click="Show_prompt_input_dialog = false">
+            @click="Show_prompt_input_dialog = false; fullyCloseSTT();">
             <div class="prompt-dialog" @click.stop>
-              <label class="prompt-dialog-label" for="promptInput">Prompt</label>
+              <div class="prompt-dialog-header">
+                <label class="prompt-dialog-label" for="promptInput">Prompt</label>
+
+                <div class="prompt_stt_menu">
+
+                  <button class="pill-btn lang-select" @click="toggle_prompt_Dropdown">
+                    <span class="flag-icon">{{languages.find(l => l.code === selectedLang)?.flag}}</span>
+                    <span class="lang-code">{{ selectedLang.toUpperCase() }}</span>
+                  </button>
+
+                  <div v-if="Is_prompt_dropdown_open" :class="{ active: Is_prompt_dropdown_animate }"
+                    class="stt-dropdown-list prompt_dropdown">
+                    <div v-for="lang in languages.sort((a, b) => a.name.localeCompare(b.name))" :key="lang.code"
+                      class="drop-item" @click="selectLanguage(lang, 'prompt')">
+                      <span class="drop-flag">{{ lang.flag }}</span> <span> {{ lang.name }}</span>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
 
               <textarea v-model.trim="prompt_input" ref="prompt_dialog_input_ref" id="promptInput"
                 class="prompt-dialog-input" placeholder="Write instructions to change selected content…"
                 rows="3"></textarea>
 
               <div class="prompt-dialog-actions">
-                <button class="prompt-btn prompt-btn--cancel" @click="Show_prompt_input_dialog = false">Cancel</button>
-                <button class="prompt-btn prompt-btn--apply" @click="applyPrompt">Apply</button>
+
+                <button class="pill-btn mic-action prompt_mic"
+                  :class="[status.toLowerCase(), { 'is-active': isRecording }]" @click="handleMicTapped('prompt')">
+                  <div v-if="status === 'Connecting'" class="spinner"></div>
+
+                  <svg v-else-if="isRecording" class="prompt_pill_icon" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
+                  </svg>
+
+                  <svg v-else class="prompt_pill_icon" viewBox="0 0 24 24">
+                    <path
+                      d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zM17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
+                      fill="currentColor" />
+                  </svg>
+
+                  <div v-if="isRecording" class="ripple-ring"></div>
+                </button>
+
+                <div class="prompt_dialog_actions_btns">
+                  <button class="prompt-btn prompt-btn--cancel"
+                    @click="Show_prompt_input_dialog = false; fully_close_prompt_STT();">Cancel</button>
+                  <button class="prompt-btn prompt-btn--apply" @click="applyPrompt">Apply</button>
+                </div>
               </div>
+
             </div>
           </div>
+
+
+          <!-- STT Menu -->
+
+          <div :class="{ active: menuVisible }" class="stt-pill-wrapper">
+
+            <div v-if="isDropdownOpen" :class="{ active: isDropdownAnimation }" class="stt-dropdown-list">
+              <div v-for="lang in languages.sort((a, b) => a.name.localeCompare(b.name))" :key="lang.code"
+                class="drop-item" @click="selectLanguage(lang)">
+                <span class="drop-flag">{{ lang.flag }}</span> <span> {{ lang.name }}</span>
+              </div>
+            </div>
+
+            <div class="stt-pill-main" :class="{ 'error-border': status === 'Error' }">
+
+              <button class="pill-btn lang-select" @click="toggleDropdown">
+                <span class="flag-icon">{{languages.find(l => l.code === selectedLang)?.flag}}</span>
+                <span class="lang-code">{{ selectedLang.toUpperCase() }}</span>
+              </button>
+
+              <div class="pill-divider"></div>
+
+              <button class="pill-btn mic-action" :class="[status.toLowerCase(), { 'is-active': isRecording }]"
+                @click="handleMicTapped">
+                <div v-if="status === 'Connecting'" class="spinner"></div>
+
+                <svg v-else-if="isRecording" class="pill-icon" viewBox="0 0 24 24">
+                  <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
+                </svg>
+
+                <svg v-else class="pill-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zM17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
+                    fill="currentColor" />
+                </svg>
+
+                <div v-if="isRecording" class="ripple-ring"></div>
+              </button>
+
+              <div class="pill-divider"></div>
+
+              <button class="pill-btn close-x" @click="fullyCloseSTT">
+                <svg class="pill-icon-small" viewBox="0 0 24 24">
+                  <path
+                    d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                    fill="currentColor" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+
+          <!-- TTS Menu -->
+          <div class="tts-shell" :class="{ active: Show_TTS_Player }" id="ttsShell">
+            <div class="tts-menu" id="ttsMenu">
+
+              <div class="tts-left">
+                <div class="tts-wave">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 9
+                   C4.2 6.8 5.3 6.8 6.5 9
+                   C7.7 11.2 8.8 11.2 10 9
+                   C11.2 6.8 12.3 6.8 13.5 9
+                   C14.7 11.2 15.8 11.2 17 9
+                   C18.2 6.8 19.3 6.8 20.5 9" stroke="#efc248" stroke-width="1.9" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                    <path d="M3 15
+                   C4.2 12.8 5.3 12.8 6.5 15
+                   C7.7 17.2 8.8 17.2 10 15
+                   C11.2 12.8 12.3 12.8 13.5 15
+                   C14.7 17.2 15.8 17.2 17 15
+                   C18.2 12.8 19.3 12.8 20.5 15" stroke="#efc248" stroke-width="1.9" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </div>
+
+                <div class="tts-meta">
+                  <div class="tts-time">{{ currentTimeDisplay }}</div>
+                </div>
+              </div>
+
+              <div class="tts-divider"></div>
+
+              <div class="tts-controls">
+
+                <button @click="seek(-10)" class="tts-btn" aria-label="Back 10 seconds">
+                  <svg class="tts-step-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="translate(-10,-15)">
+                      <path d="M30 25 A16 16 0 1 1 18 38" stroke="currentColor" stroke-width="3.8"
+                        stroke-linecap="round" />
+                    </g>
+                    <g transform="translate(5,-6)">
+                      <path d="M18 10 L10 16 L18 22" stroke="currentColor" stroke-width="3.8" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </g>
+                    <text x="22.5" y="30" text-anchor="middle" font-size="11" font-weight="800" fill="currentColor"
+                      font-family="Segoe UI, sans-serif">10</text>
+                  </svg>
+                </button>
+
+                <button @click="togglePause" class="tts-btn primary" aria-label="Play">
+
+                  <!-- Play -->
+                  <svg v-if="!isPlaying" class="tts-play-icon" viewBox="0 0 24 24" fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 5.5
+                   C8 4.7 8.9 4.2 9.6 4.7
+                   L18 10.3
+                   C18.7 10.8 18.7 12 18 12.5
+                   L9.6 18.1
+                   C8.9 18.6 8 18.1 8 17.3
+                   Z" />
+                  </svg>
+
+                  <!-- Pause -->
+                  <svg v-else class="tts-pause-icon" viewBox="0 0 24 24" fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <rect x="6" y="5.5" width="3.5" height="13" rx="0.8" />
+                    <rect x="14.5" y="5.5" width="3.5" height="13" rx="0.8" />
+                  </svg>
+
+                </button>
+
+                <button @click="seek(10)" class="tts-btn" aria-label="Forward 10 seconds">
+                  <svg class="tts-step-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="translate(10,-16)">
+                      <path d="M18 26 A16 16 0 1 0 30 38" stroke="currentColor" stroke-width="3.8"
+                        stroke-linecap="round" />
+                    </g>
+                    <g transform="translate(-5,-6)">
+                      <path d="M30 10 L38 16 L30 22" stroke="currentColor" stroke-width="3.8" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </g>
+                    <text x="23" y="29" text-anchor="middle" font-size="11" font-weight="800" fill="currentColor"
+                      font-family="Segoe UI, sans-serif">10</text>
+                  </svg>
+                </button>
+
+                <div class="tts-speed" id="speedWrap">
+                  <button @click="Toggle_Playback_dropdown = !Toggle_Playback_dropdown" class="tts-btn tts-speed-btn"
+                    id="speedBtn" aria-label="Playback speed">
+                    <span class="tts-speed-text" id="speedText">{{ playbackRate }}x</span>
+                  </button>
+
+                  <div class="tts-speed-menu" :class="{ active: Toggle_Playback_dropdown }" id="speedMenu">
+                    <button @click="playbackRate = item.speed; Toggle_Playback_dropdown = false"
+                      v-for="(item, idx) in playbackRate_Speeds" :key="idx" class="tts-speed-option">{{ item.msg
+                      }}</button>
+                  </div>
+                </div>
+
+                <button @click="stopEverything" class="tts-btn tts-close" id="closeTTS" aria-label="Close">
+                  <svg class="tts-close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 6L18 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+                    <path d="M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+                  </svg>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+
 
 
           <!-- EDITOR ELEMENT -->
@@ -3198,7 +3468,7 @@
               <div v-if="Show_Choice_Dialog" class="style-dialog">
                 <h2>Select Source</h2>
                 <button class="option" @click="chooseSource('local')">
-                  <span>
+                  <div class="select_file_source_wrapper">
                     <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
                       <!-- frame -->
                       <rect x="2" y="2" width="60" height="60" rx="12" ry="12" fill="none" stroke="#FFD700"
@@ -3219,11 +3489,11 @@
                     </svg>
 
                     <span> Attach From Device </span>
-                  </span>
+                  </div>
                 </button>
 
                 <button class="option" @click="chooseSource('online')">
-                  <span>
+                  <div class="select_file_source_wrapper">
                     <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
                       <!-- frame -->
                       <rect x="2" y="2" width="60" height="60" rx="12" ry="12" fill="none" stroke="#FFD700"
@@ -3242,8 +3512,41 @@
                       </g>
                     </svg>
                     <span> Attach Online </span>
-                  </span>
+                  </div>
                 </button>
+
+                <button :disabled="OCR_Processing" class="option ocr" @click="chooseSource('OCR')">
+                  <div class="select_file_source_wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 512 512" fill="none">
+                      <!-- Scan Corners -->
+                      <path d="M96 176V128C96 110 110 96 128 96H176" stroke="#FFD700" stroke-width="28"
+                        stroke-linecap="round" stroke-linejoin="round" />
+
+                      <path d="M336 96H384C402 96 416 110 416 128V176" stroke="#FFD700" stroke-width="28"
+                        stroke-linecap="round" stroke-linejoin="round" />
+
+                      <path d="M416 336V384C416 402 402 416 384 416H336" stroke="#FFD700" stroke-width="28"
+                        stroke-linecap="round" stroke-linejoin="round" />
+
+                      <path d="M176 416H128C110 416 96 402 96 384V336" stroke="#FFD700" stroke-width="28"
+                        stroke-linecap="round" stroke-linejoin="round" />
+
+                      <!-- Center OCR/Text -->
+                      <rect x="148" y="168" width="216" height="36" rx="18" fill="#FFD700" />
+
+                      <rect x="148" y="244" width="150" height="36" rx="18" fill="#FFD700" />
+
+                      <rect x="148" y="320" width="110" height="36" rx="18" fill="#FFD700" />
+                    </svg>
+
+                    <div class="select_file_OCR_text_wrapper">
+                      <span> OCR Extract Text </span>
+                      <div class="Upload_Loader OCR_loader" :class="{ 'Upload_Loader_active': OCR_Processing }"></div>
+                    </div>
+
+                  </div>
+                </button>
+
               </div>
 
               <div v-if="Show_Type_Dialog" class="style-dialog">
@@ -3372,6 +3675,21 @@
 
             <!--  -->
 
+            <button @click="menuVisible = !menuVisible; stopEverything()" class="STT_btn" title="Speech to text">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 512 512" fill="none">
+                <rect x="26" y="100" width="33" height="76" rx="16.5" fill="#FFD700" />
+                <rect x="90" y="36" width="33" height="203" rx="16.5" fill="#FFD700" />
+                <rect x="154" y="78" width="33" height="119" rx="16.5" fill="#FFD700" />
+                <rect x="218" y="100" width="33" height="76" rx="16.5" fill="#FFD700" />
+
+                <rect x="176" y="355" width="157" height="33" rx="16.5" fill="#FFD700" />
+
+                <path
+                  d="M290 95H430C461.3 95 487 120.7 487 152V438C487 469.3 461.3 495 430 495H110C78.7 495 53 469.3 53 438V281"
+                  stroke="#FFD700" stroke-width="33" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+
             <button ref="recordAudioButton" @click="AudioRec"
               :title="Is_Audio_Recording ? 'Stop Recording' : 'Record Audio'">
               <svg v-show="Is_Audio_Recording" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -3404,6 +3722,7 @@
                 </path>
               </svg>
             </button>
+
 
             <button @click="
               Is_FlashLight_On = !Is_FlashLight_On;
@@ -3660,19 +3979,76 @@
           </div>
 
 
+          <!-- OCR Status Bar -->
+          <div v-if="OCR_Processing" class="ai-floating-bar">
+            <div class="ai-bar-content">
+              <div class="ai-status">
+                <span class="ai-dot"></span>
+                <span class="ai-text">{{ OCR_Status }}</span>
+              </div>
+
+              <button @click="Stop_OCR" class="stop-button">
+                ⏹️ Stop
+              </button>
+            </div>
+          </div>
+
+
           <div class="prompt-overlay" :class="{ active: Show_prompt_input_dialog }" id="promptOverlay"
-            @click="Show_prompt_input_dialog = false">
+            @click="Show_prompt_input_dialog = false; fullyCloseSTT();">
             <div class="prompt-dialog" @click.stop>
-              <label class="prompt-dialog-label" for="promptInput">Prompt</label>
+              <div class="prompt-dialog-header">
+                <label class="prompt-dialog-label" for="promptInput">Prompt</label>
+
+                <div class="prompt_stt_menu">
+
+                  <button class="pill-btn lang-select" @click="toggle_prompt_Dropdown">
+                    <span class="flag-icon">{{languages.find(l => l.code === selectedLang)?.flag}}</span>
+                    <span class="lang-code">{{ selectedLang.toUpperCase() }}</span>
+                  </button>
+
+                  <div v-if="Is_prompt_dropdown_open" :class="{ active: Is_prompt_dropdown_animate }"
+                    class="stt-dropdown-list prompt_dropdown">
+                    <div v-for="lang in languages.sort((a, b) => a.name.localeCompare(b.name))" :key="lang.code"
+                      class="drop-item" @click="selectLanguage(lang, 'prompt')">
+                      <span class="drop-flag">{{ lang.flag }}</span> <span> {{ lang.name }}</span>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
 
               <textarea v-model.trim="prompt_input" ref="prompt_dialog_input_ref" id="promptInput"
                 class="prompt-dialog-input" placeholder="Write instructions to change selected content…"
                 rows="3"></textarea>
 
               <div class="prompt-dialog-actions">
-                <button class="prompt-btn prompt-btn--cancel" @click="Show_prompt_input_dialog = false">Cancel</button>
-                <button class="prompt-btn prompt-btn--apply" @click="applyPrompt">Apply</button>
+
+                <button class="pill-btn mic-action prompt_mic"
+                  :class="[status.toLowerCase(), { 'is-active': isRecording }]" @click="handleMicTapped('prompt')">
+                  <div v-if="status === 'Connecting'" class="spinner"></div>
+
+                  <svg v-else-if="isRecording" class="prompt_pill_icon" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
+                  </svg>
+
+                  <svg v-else class="prompt_pill_icon" viewBox="0 0 24 24">
+                    <path
+                      d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zM17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
+                      fill="currentColor" />
+                  </svg>
+
+                  <div v-if="isRecording" class="ripple-ring"></div>
+                </button>
+
+                <div class="prompt_dialog_actions_btns">
+                  <button class="prompt-btn prompt-btn--cancel"
+                    @click="Show_prompt_input_dialog = false; fully_close_prompt_STT();">Cancel</button>
+                  <button class="prompt-btn prompt-btn--apply" @click="applyPrompt">Apply</button>
+                </div>
               </div>
+
             </div>
           </div>
 
@@ -3719,6 +4095,171 @@
               <line x1="14" y1="12" x2="10" y2="16" stroke="currentColor"></line>
             </svg>
           </button>
+
+
+          <!-- STT Menu -->
+
+          <div :class="{ active: menuVisible }" class="stt-pill-wrapper">
+
+            <div v-if="isDropdownOpen" :class="{ active: isDropdownAnimation }" class="stt-dropdown-list">
+              <div v-for="lang in languages.sort((a, b) => a.name.localeCompare(b.name))" :key="lang.code"
+                class="drop-item" @click="selectLanguage(lang)">
+                <span class="drop-flag">{{ lang.flag }}</span> <span> {{ lang.name }}</span>
+              </div>
+            </div>
+
+            <div class="stt-pill-main" :class="{ 'error-border': status === 'Error' }">
+
+              <button class="pill-btn lang-select" @click="toggleDropdown">
+                <span class="flag-icon">{{languages.find(l => l.code === selectedLang)?.flag}}</span>
+                <span class="lang-code">{{ selectedLang.toUpperCase() }}</span>
+              </button>
+
+              <div class="pill-divider"></div>
+
+              <button class="pill-btn mic-action" :class="[status.toLowerCase(), { 'is-active': isRecording }]"
+                @click="handleMicTapped">
+                <div v-if="status === 'Connecting'" class="spinner"></div>
+
+                <svg v-else-if="isRecording" class="pill-icon" viewBox="0 0 24 24">
+                  <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
+                </svg>
+
+                <svg v-else class="pill-icon" viewBox="0 0 24 24">
+                  <path
+                    d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zM17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
+                    fill="currentColor" />
+                </svg>
+
+                <div v-if="isRecording" class="ripple-ring"></div>
+              </button>
+
+              <div class="pill-divider"></div>
+
+              <button class="pill-btn close-x" @click="fullyCloseSTT">
+                <svg class="pill-icon-small" viewBox="0 0 24 24">
+                  <path
+                    d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                    fill="currentColor" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+
+
+
+          <!-- TTS Menu -->
+          <div class="tts-shell" :class="{ active: Show_TTS_Player }" id="ttsShell">
+            <div class="tts-menu" id="ttsMenu">
+
+              <div class="tts-left">
+                <div class="tts-wave">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 9
+                   C4.2 6.8 5.3 6.8 6.5 9
+                   C7.7 11.2 8.8 11.2 10 9
+                   C11.2 6.8 12.3 6.8 13.5 9
+                   C14.7 11.2 15.8 11.2 17 9
+                   C18.2 6.8 19.3 6.8 20.5 9" stroke="#efc248" stroke-width="1.9" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                    <path d="M3 15
+                   C4.2 12.8 5.3 12.8 6.5 15
+                   C7.7 17.2 8.8 17.2 10 15
+                   C11.2 12.8 12.3 12.8 13.5 15
+                   C14.7 17.2 15.8 17.2 17 15
+                   C18.2 12.8 19.3 12.8 20.5 15" stroke="#efc248" stroke-width="1.9" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </div>
+
+                <div class="tts-meta">
+                  <div class="tts-time">{{ currentTimeDisplay }}</div>
+                </div>
+              </div>
+
+              <div class="tts-divider"></div>
+
+              <div class="tts-controls">
+
+                <button @click="seek(-10)" class="tts-btn" aria-label="Back 10 seconds">
+                  <svg class="tts-step-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="translate(-10,-15)">
+                      <path d="M30 25 A16 16 0 1 1 18 38" stroke="currentColor" stroke-width="3.8"
+                        stroke-linecap="round" />
+                    </g>
+                    <g transform="translate(5,-6)">
+                      <path d="M18 10 L10 16 L18 22" stroke="currentColor" stroke-width="3.8" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </g>
+                    <text x="22.5" y="30" text-anchor="middle" font-size="11" font-weight="800" fill="currentColor"
+                      font-family="Segoe UI, sans-serif">10</text>
+                  </svg>
+                </button>
+
+                <button @click="togglePause" class="tts-btn primary" aria-label="Play">
+
+                  <!-- Play -->
+                  <svg v-if="!isPlaying" class="tts-play-icon" viewBox="0 0 24 24" fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 5.5
+                   C8 4.7 8.9 4.2 9.6 4.7
+                   L18 10.3
+                   C18.7 10.8 18.7 12 18 12.5
+                   L9.6 18.1
+                   C8.9 18.6 8 18.1 8 17.3
+                   Z" />
+                  </svg>
+
+                  <!-- Pause -->
+                  <svg v-else class="tts-pause-icon" viewBox="0 0 24 24" fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <rect x="6" y="5.5" width="3.5" height="13" rx="0.8" />
+                    <rect x="14.5" y="5.5" width="3.5" height="13" rx="0.8" />
+                  </svg>
+
+                </button>
+
+                <button @click="seek(10)" class="tts-btn" aria-label="Forward 10 seconds">
+                  <svg class="tts-step-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="translate(10,-16)">
+                      <path d="M18 26 A16 16 0 1 0 30 38" stroke="currentColor" stroke-width="3.8"
+                        stroke-linecap="round" />
+                    </g>
+                    <g transform="translate(-5,-6)">
+                      <path d="M30 10 L38 16 L30 22" stroke="currentColor" stroke-width="3.8" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </g>
+                    <text x="23" y="29" text-anchor="middle" font-size="11" font-weight="800" fill="currentColor"
+                      font-family="Segoe UI, sans-serif">10</text>
+                  </svg>
+                </button>
+
+                <div class="tts-speed" id="speedWrap">
+                  <button @click="Toggle_Playback_dropdown = !Toggle_Playback_dropdown" class="tts-btn tts-speed-btn"
+                    id="speedBtn" aria-label="Playback speed">
+                    <span class="tts-speed-text" id="speedText">{{ playbackRate }}x</span>
+                  </button>
+
+                  <div class="tts-speed-menu" :class="{ active: Toggle_Playback_dropdown }" id="speedMenu">
+                    <button @click="playbackRate = item.speed; Toggle_Playback_dropdown = false"
+                      v-for="(item, idx) in playbackRate_Speeds" :key="idx" class="tts-speed-option">{{ item.msg
+                      }}</button>
+                  </div>
+                </div>
+
+                <button @click="stopEverything" class="tts-btn tts-close" id="closeTTS" aria-label="Close">
+                  <svg class="tts-close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 6L18 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+                    <path d="M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+                  </svg>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+
 
           <div :class="{
             Load_All_Notes_Container_Show_override_position: Attachment_Capacity_Violation_Toggle_Message,
@@ -3863,8 +4404,8 @@
           </section>
 
           <div class="View_Text_In_UI View_Text_In_UI_Title" v-html="SendNoteForView_Title"></div>
-          <div ref="Note_View_UI_Text_Element" style="padding-bottom: clamp(2rem, 8vw, 5rem);" class="Read_only_mode View_Text_In_UI"
-            v-html="SendNoteForView_Message"></div>
+          <div ref="Note_View_UI_Text_Element" style="padding-bottom: clamp(2rem, 8vw, 5rem);"
+            class="Read_only_mode View_Text_In_UI" v-html="SendNoteForView_Message"></div>
           <!-- view ui closing btn -->
           <button class="btn close_note_create_edit_btn" @click="CloseBtn(null)" title="Close"
             style="position: absolute; bottom: 0; z-index: 100;">
@@ -4308,7 +4849,9 @@ import {
   prompt_dialog_input_ref,
   bubbleMenuOptions,
   Is_AI_Edit_Started,
-  Stop_AI_Generation
+  Stop_AI_Generation,
+  Open_dialog,
+  applyPrompt
 } from './components/AI_Feature'
 //
 import { EditorContent } from "@tiptap/vue-3"; // The component
@@ -4351,9 +4894,11 @@ import { useHead } from "@unhead/vue";
 import { Paste_Procssing } from "./components/Paste_Drag_Drop_Handler";
 import json from './assets/Seed_Note/Seed.json'
 import { Note } from './assets/Seed_Note/Seed.js'
-import { useTouchDetection } from './components/Is_Touch';
+import { useTouchDetection, waitForKeyboardClose } from './components/Is_Touch';
 import { getRealFileInfo } from './components/File_Type_Checker';
-
+import { Handle_OCR, OCR_Processing, OCR_Status, Stop_OCR } from './components/OCR';
+import { currentTimeDisplay, isPlaying, playbackRate, playbackRate_Speeds, seek, Show_TTS_Player, stopEverything, Toggle_Playback_dropdown, togglePause } from './components/Text_To_Speech';
+import { toggleDropdown, isDropdownAnimation, menuVisible, isDropdownOpen, languages, isRecording, status, selectedLang, handleMicTapped, selectLanguage, fullyCloseSTT, toggle_prompt_Dropdown, Is_prompt_dropdown_open, Is_prompt_dropdown_animate, fully_close_prompt_STT } from './components/Speech_To_Text';
 // .................................... All Variables .........................................
 
 
@@ -4705,32 +5250,6 @@ async function toggleFavorite(note) {
   }
 }
 
-
-/* bubble menu prompt input dialog */
-
-let custom_action_item;
-
-async function Open_dialog(custom_action) {
-  Show_prompt_input_dialog.value = true;
-  await new Promise(resolve => setTimeout(resolve, 250));
-  prompt_dialog_input_ref.value.focus();
-  custom_action_item = custom_action;
-}
-
-
-async function applyPrompt() {
-  const value = prompt_input.value;
-  if (value) {
-    console.log('Prompt applied:', value);
-  }
-  else {
-    Show_Create_Edit_Model_Warning("No Instruction found.", 3000);
-    return;
-  }
-  await waitForKeyboardClose(200);
-  Show_prompt_input_dialog.value = false;
-  Modify_By_AI(custom_action_item);
-}
 
 /* =============================================
    STATE (Composition API - latest Vue 3 pattern)
@@ -5362,11 +5881,16 @@ function Show_Select_Input_Source_Selection() {
   Show_Overlay.value = true;
 }
 
-//
+
+let Is_Select_Type_OCR = ref(false);
+
 function chooseSource(source) {
   try {
     Show_Choice_Dialog.value = false;
-    if (source === "local") {
+    if (source === "local" || source === "OCR") {
+
+      if (source === "OCR") Is_Select_Type_OCR.value = true;
+
       Show_Overlay.value = false;
       fileInput_tag_ref.value.click();
     } else {
@@ -5648,6 +6172,11 @@ async function CloseBtn(original = "note_making") {
     if (original === "note_making") {
       // NOTE-MAKING MODE: Minimal UI changes and essential cleanup.
       if (EditMode.value) return;
+      fullyCloseSTT();
+      fully_close_prompt_STT();
+      stopEverything();
+      Stop_AI_Generation();
+      Stop_OCR();
       if (isTouchFirst.value)
         await waitForKeyboardClose(200);
       toggle_delete_model.value = false;
@@ -6847,7 +7376,12 @@ async function startVideoRecording(facingMode) {
     };
 
     // Get the original stream
-    originalStream = await navigator.mediaDevices.getUserMedia(constraints);
+    try {
+      originalStream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch {
+      Show_Create_Edit_Model_Warning("Camera Access Denied, Please Allow it and Try Again.", 3000);
+      return;
+    }
     currentStream = originalStream; // keep a reference
     const All_Devices = await navigator.mediaDevices.enumerateDevices();
 
@@ -7038,6 +7572,7 @@ async function startAudioRecording() {
     recordVideoButton.value.disabled = true;
   } catch (error) {
     console.error("Error accessing microphone:", error);
+    Show_Create_Edit_Model_Warning("Microphone Access Denied, Please Allow it and Try Again.", 3000);
   }
 }
 
@@ -7531,6 +8066,21 @@ async function manageMedia(
       }
     }
 
+
+    // OCR operation we will delegate file to some other will future method.
+
+    if (Is_Select_Type_OCR.value) {
+      if (!["image", "document"].includes(storageType)) {
+        Show_Create_Edit_Model_Warning("Only Images and Documents Supported for OCR!", 3000);
+        return;
+      }
+      else {
+        await Handle_OCR(selectedFile);
+        Is_Select_Type_OCR.value = false;
+        return;
+      }
+    }
+
     // Use different reading methods based on file type
     if (storageType === "text") {
       if (Paste_Procssing.value) {
@@ -7546,6 +8096,7 @@ async function manageMedia(
       fileType = fileInfo.mime;
       fileName = normalizeString(selectedFile.name);
       fileSize = selectedFile.size;
+
 
       // Usage:
       if (["image", "video", "audio", "document"].includes(storageType)) {
@@ -7572,6 +8123,7 @@ async function manageMedia(
     fileName = "";
     fileSize = 0;
     fileData = null;
+    Is_Select_Type_OCR.value = false;
     Paste_Procssing.value = false;
     Disable_Done_Btn(false);
     if (!isTouchFirst.value) Tiptap_Editor.commands.focus();
@@ -8357,6 +8909,12 @@ function resetToggles() {
 // ........................ This Big function for save data when save or done buton pressed ..........................
 async function DoneBtn() {
   try {
+    fullyCloseSTT();
+    fully_close_prompt_STT();
+    stopEverything();
+    Stop_AI_Generation();
+    Stop_OCR();
+
     // ......................... function for save data when in editing mode ..............................
     if (EditMode.value) {
       await Edit_Mode_Done_Btn();
@@ -8500,44 +9058,6 @@ async function Edit_Mode_Done_Btn() {
     CurrentIndex.value = null;
     resetToggles();
   }
-}
-
-function waitForKeyboardClose(maxWait = 500) {
-  new Promise(resolve => requestAnimationFrame(resolve)).then(() => { });
-  return new Promise((resolve) => {
-    let done = false;
-
-    if (!document.activeElement || document.activeElement === document.body) {
-      resolve();
-      return;
-    }
-
-    // Force blur on whatever is focused
-    if (document.activeElement && typeof document.activeElement.blur === "function") {
-      document.activeElement.blur();
-    }
-
-    // Fallback timer
-    const timer = setTimeout(() => {
-      if (!done) {
-        done = true;
-        resolve(); // continue even if no blur event fired
-      }
-    }, maxWait);
-
-    // Listen for blur/focusout
-    document.addEventListener(
-      "focusout",
-      () => {
-        if (!done) {
-          clearTimeout(timer);
-          done = true;
-          resolve(); // continue once blur happens
-        }
-      },
-      { once: true }
-    );
-  });
 }
 
 
