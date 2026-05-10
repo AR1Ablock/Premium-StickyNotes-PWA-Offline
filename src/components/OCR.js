@@ -15,7 +15,7 @@ export const OCR_Processing = ref(false);
 export const OCR_Status = ref("Ready for OCR");
 
 
-const API_KEY = 'llx-vPliT861avd0eQWifRK6k0YrbnQefVLhEghrEJ2JrRCl6My7';
+const API_KEY = 'llx-';
 const commonHeaders = { 'Authorization': `Bearer ${API_KEY.trim()}` };
 
 let fileId = null;
