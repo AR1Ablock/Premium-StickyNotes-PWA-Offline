@@ -50,7 +50,7 @@ export let prompt_input = ref(null);
 
 
 
-let mistral_api_key = "wthlMib6XYQ7HJ5UXDtw5eRMWuOt79jj"
+let mistral_api_key = "xxx"
 
 
 const AI_SYSTEM_PROMPT = `
