@@ -453,7 +453,11 @@
 
     <!-- WORKSPACE SELECTOR MODAL (lightweight & beautiful) -->
     <div class="modal-overlay" :class="{ show: showWorkspaceSelector }" @click.self="cancelWorkspaceSelection">
-      <div class="workspace-selector-card" :class="{ show: showWorkspaceSelector }">
+      <div ref="workspaceSelectorCard" tabindex="0" @keydown.up.prevent="moveWorkspaceSelection(-1)"
+        @keydown.down.prevent="moveWorkspaceSelection(1)" @keydown.left.prevent="moveSubgroupSelection(-1)"
+        @keydown.right.prevent="moveSubgroupSelection(1)" @keydown.enter.prevent="confirmWorkspaceSelection"
+        @keydown.esc.prevent="cancelWorkspaceSelection" class="workspace-selector-card"
+        :class="{ show: showWorkspaceSelector }">
         <h2 class="selector-title">Choose Workspace</h2>
         <p class="selector-subtitle">Where should this note be saved?</p>
 
@@ -482,12 +486,15 @@
           <div v-if="tempSelectedWorkspaceId" class="subgroup-section">
             <label class="modal-label">Sub-Group <span class="optional">(optional)</span></label>
             <div class="subgroup-pills scroller">
-              <div class="sub-pill" :class="{ active: tempSelectedSubgroup === null }"
-                @click="tempSelectedSubgroup = null">
+              <!-- None pill -->
+              <div class="sub-pill" :class="{ active: tempSelectedSubgroupIndex === 0 }"
+                @click="tempSelectedSubgroupIndex = 0; tempSelectedSubgroup = null">
                 None
               </div>
+              <!-- Subgroup pills -->
               <div v-for="(sub, index) in tempCurrentSubgroups" :key="index" class="sub-pill scroller"
-                :class="{ active: tempSelectedSubgroup === sub.name }" @click="tempSelectedSubgroup = sub.name">
+                :class="{ active: tempSelectedSubgroupIndex === index + 1 }"
+                @click="tempSelectedSubgroupIndex = index + 1; tempSelectedSubgroup = sub.name">
                 {{ sub.name }}
               </div>
             </div>
@@ -5585,7 +5592,8 @@ async function Delete_WorkSpace_And_Associated_Notes(deletion) {
 const showWorkspaceSelector = ref(false)
 const tempSelectedWorkspaceId = ref(null)
 const tempSelectedSubgroup = ref(null)
-
+let workspaceSelectorCard = ref();
+const tempSelectedSubgroupIndex = ref(0) // 0 = "None", 1+ = actual subgroups
 
 // Computed for current subgroups
 const tempCurrentSubgroups = computed(() => {
@@ -5593,12 +5601,27 @@ const tempCurrentSubgroups = computed(() => {
   return ws?.subgroups ?? []
 })
 
+
+const workspaceSelectorItems = computed(() => [
+  { id: null, name: 'No Workspace' },
+  ...workspaces.value.map(ws => ({ id: ws.id, name: ws.name }))
+]);
+
+const selectedWorkspaceIndex = computed(() => {
+  const idx = workspaceSelectorItems.value.findIndex(item => item.id === tempSelectedWorkspaceId.value);
+  return idx === -1 ? 0 : idx;
+});
+
+
 // Create Note Button Handler (replace your old + button click)
-function Create_Edit_Note_By_WorkSpace(id, Its_Edit_Mode = false) {
+async function Create_Edit_Note_By_WorkSpace(id, Its_Edit_Mode = false) {
   closeSidebar();
   let index = 0;
 
   if (id) index = data.value.findIndex(n => n.id === id) // index
+
+  // set time out of 300 for focus on workspace card
+  setTimeout(() => workspaceSelectorCard.value?.focus(), 300);
 
   if (workspaces.value.length === 0) {
     //
@@ -5628,6 +5651,39 @@ function Create_Edit_Note_By_WorkSpace(id, Its_Edit_Mode = false) {
 }
 
 
+function moveWorkspaceSelection(direction) {
+  const items = workspaceSelectorItems.value;
+  if (!items.length) return;
+
+  let nextIndex = selectedWorkspaceIndex.value + direction;
+  if (nextIndex < 0) nextIndex = items.length - 1;
+  if (nextIndex >= items.length) nextIndex = 0;
+
+  tempSelectedWorkspaceId.value = items[nextIndex].id;
+  tempSelectedSubgroup.value = null;
+}
+
+
+function moveSubgroupSelection(direction) {
+  if (!tempSelectedWorkspaceId.value) return; // Only if workspace is selected
+
+  const totalItems = 1 + tempCurrentSubgroups.value.length; // 1 (None) + subgroups
+  let nextIndex = tempSelectedSubgroupIndex.value + direction;
+
+  if (nextIndex < 0) nextIndex = totalItems - 1;
+  if (nextIndex >= totalItems) nextIndex = 0;
+
+  tempSelectedSubgroupIndex.value = nextIndex;
+
+  // Update the name based on index
+  if (nextIndex === 0) {
+    tempSelectedSubgroup.value = null;
+  } else {
+    tempSelectedSubgroup.value = tempCurrentSubgroups.value[nextIndex - 1]?.name || null;
+  }
+}
+
+
 let selectedWorkspaceId = ref(null);
 let selectedSubgroup = ref(null);
 
@@ -5646,12 +5702,17 @@ const confirmWorkspaceSelection = () => {
 }
 
 const cancelWorkspaceSelection = () => {
-  showWorkspaceSelector.value = false
+  showWorkspaceSelector.value = false;
+  if (EditMode.value) EditMode.value = false;
+  tempSelectedWorkspaceId.value = null;
+  tempSelectedSubgroup.value = null;
+  tempSelectedSubgroupIndex.value = 0 // Reset to "None"
 }
 
 const selectWorkspaceTemp = (id) => {
   tempSelectedWorkspaceId.value = id
   tempSelectedSubgroup.value = null
+  tempSelectedSubgroupIndex.value = 0 // Reset to "None"
 }
 
 

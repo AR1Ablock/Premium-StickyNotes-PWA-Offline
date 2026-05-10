@@ -8,21 +8,19 @@ import { Stop_AI_Generation } from './AI_Feature';
 let currentOcrController = null;
 let inactivityTimer = null;
 
+// set inactive to 50 sec
 const INACTIVITY_TIMEOUT = 50000; // 50s (If server stops talking)
 const HARD_TOTAL_TIMEOUT = 600000; // 10m (Safety net)
 
 export const OCR_Processing = ref(false);
 export const OCR_Status = ref("Ready for OCR");
 
-
-const API_KEY = 'llx-';
-const commonHeaders = { 'Authorization': `Bearer ${API_KEY.trim()}` };
-
 let fileId = null;
 let jobId = null;
+let wasEditableBeforeOCR = null; // To track editor state before OCR starts
 
-const proxy_1 = "https://corsproxy.io/?";
-// const proxy_2 = "https://corsproxy.io/?";
+// Local dev vs production
+const PROXY_ROOT = "https://notes-ocr-proxy.ocr-proxy.workers.dev";
 
 let AI_Custom_Prompt = `You are an expert academic document intelligence specialist and master Markdown formatter. Your task is to convert complex handwritten notes, scanned documents, textbooks, research papers, and study materials into clean, beautiful, professional, and highly readable Markdown.
 
@@ -99,7 +97,7 @@ export function Stop_OCR() {
  * HANDLE OCR: The 3-stage intelligence pipeline
  */
 export async function Handle_OCR(input) {
-    if(!navigator.onLine) {
+    if (!navigator.onLine) {
         const msg = "You are currently offline. Please connect to the internet to use the OCR feature.";
         Show_Create_Edit_Model_Warning(msg, 5000);
         console.warn("[OCR] Attempted to start OCR while offline.");
@@ -130,7 +128,7 @@ export async function Handle_OCR(input) {
         fully_close_prompt_STT();
         Stop_AI_Generation();
 
-        const wasEditable = Tiptap_Editor.isEditable;
+        wasEditableBeforeOCR = Tiptap_Editor.isEditable;
         Tiptap_Editor.setEditable(false); // Make editor read-only during OCR to prevent conflicts
 
         OCR_Processing.value = true;
@@ -145,9 +143,8 @@ export async function Handle_OCR(input) {
             formData.append('upload_file', input);
             formData.append('purpose', "parse");
 
-            const uploadRes = await fetch(`${proxy_1}https://api.cloud.llamaindex.ai/api/v1/files`, {
+            const uploadRes = await fetch(`${PROXY_ROOT}/api/v1/files`, {
                 method: 'POST',
-                headers: commonHeaders,
                 body: formData,
                 signal: combinedSignal
             });
@@ -181,9 +178,9 @@ export async function Handle_OCR(input) {
         };
         if (fileId) parsePayload.file_id = fileId;
 
-        const parseRes = await fetch(`${proxy_1}https://api.cloud.llamaindex.ai/api/v2/parse`, {
+        const parseRes = await fetch(`${PROXY_ROOT}/api/v2/parse`, {
             method: 'POST',
-            headers: { ...commonHeaders, 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json' },
             body: JSON.stringify(parsePayload),
             signal: combinedSignal
         });
@@ -201,10 +198,9 @@ export async function Handle_OCR(input) {
             attempts++;
             OCR_Status.value = `AI is reading... (${attempts * 2}s)`;
 
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-            const pollRes = await fetch(`${proxy_1}https://api.cloud.llamaindex.ai/api/v2/parse/${jobId}?expand=markdown_full`, {
-                headers: commonHeaders,
+            const pollRes = await fetch(`${PROXY_ROOT}/api/v2/parse/${jobId}?expand=markdown_full`, {
                 signal: combinedSignal
             });
 
@@ -251,10 +247,10 @@ export async function Handle_OCR(input) {
         currentOcrController = null;
         OCR_Processing.value = false;
         clearTimeout(inactivityTimer);
-        await cleanupLlamaResources(fileId, jobId);
+        await cleanupLlamaResources(fileId);
         fileId = null;
         jobId = null;
-        Tiptap_Editor.setEditable(true); // Restore editor state after OCR process
+        Tiptap_Editor.setEditable(wasEditableBeforeOCR); // Restore editor state after OCR process
     }
 }
 
@@ -263,26 +259,16 @@ export async function Handle_OCR(input) {
 /**
  * Cleanup: Delete file and cancel job (if needed)
  */
-async function cleanupLlamaResources(fileId, jobId) {
+async function cleanupLlamaResources(fileId) {
 
     try {
 
         // 1. Delete File (Most Important)
         if (fileId) {
-            await fetch(`${proxy_1}https://api.cloud.llamaindex.ai/api/v1/beta/files/${fileId}`, {
+            await fetch(`${PROXY_ROOT}/api/v1/beta/files/${fileId}`, {
                 method: 'DELETE',
-                headers: commonHeaders
             });
             console.log(`[Cleanup] File deleted: ${fileId}`);
-        }
-
-        // 2. Cancel Job (if it exists and might still be running)
-        if (jobId) {
-            await fetch(`${proxy_1}https://api.cloud.llamaindex.ai/api/v2/parse/${jobId}/cancel`, {
-                method: 'POST',
-                headers: { ...commonHeaders, 'Content-Type': 'application/json' }
-            });
-            console.log(`[Cleanup] Job cancelled: ${jobId}`);
         }
     } catch (err) {
         console.warn("[Cleanup] Failed to delete resources:", err.message);
